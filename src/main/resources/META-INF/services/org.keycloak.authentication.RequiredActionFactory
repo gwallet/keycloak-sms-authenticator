@@ -1,0 +1,5 @@
+## The first required action checks if the mobile number is configured
+com.alliander.keycloak.authenticator.KeycloakSmsRequiredMobileNumberFactory
+
+## The second required action sends a code to the user's mobile and checks for the correct code
+#com.alliander.keycloak.authenticator.KeycloakSmsRequiredActionFactory
