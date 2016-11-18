@@ -23,13 +23,28 @@ public class KeycloakSmsRequiredAction implements RequiredActionProvider {
     public void requiredActionChallenge(RequiredActionContext context) {
         logger.debug("requiredActionChallenge called ...");
 
-        Response challenge = context.form().createForm("sms_validtion_config.ftl");
-        context.challenge(challenge);
+        context.success();
 //        List<String> mobileNumberList = context.getUser().getAttribute("mobile");
 
     }
 
+    public void requiredActionChallenge__(RequiredActionContext context) {
+        logger.debug("requiredActionChallenge called ...");
+
+        UserCredentialValueModel model = new UserCredentialValueModel();
+        model.setValue("set");
+        model.setType(KeycloakSmsAuthenticator.CREDENTIAL_TYPE);
+        context.getUser().updateCredentialDirectly(model);
+
+//        context.success();
+    }
+
     public void processAction(RequiredActionContext context) {
+        logger.debug("processAction called ...");
+//        context.success();
+    }
+
+    public void processAction__(RequiredActionContext context) {
         logger.debug("processAction called ...");
 
 

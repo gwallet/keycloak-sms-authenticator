@@ -3,7 +3,6 @@ package com.alliander.keycloak.authenticator;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
-import org.keycloak.models.UserCredentialValueModel;
 import org.keycloak.models.UserModel;
 
 import javax.ws.rs.core.Response;
@@ -24,7 +23,7 @@ public class KeycloakSmsRequiredMobileNumber implements RequiredActionProvider {
         logger.debug("requiredActionChallenge called ...");
 
         UserModel user = context.getUser();
-        String mobileNumber = Util.getAttributeValue(user, Contstants.ATTR_MOBILE);
+        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(user, SMSAuthenticatorContstants.ATTR_MOBILE);
 
         if(mobileNumber != null) {
             // Mobile number is configured

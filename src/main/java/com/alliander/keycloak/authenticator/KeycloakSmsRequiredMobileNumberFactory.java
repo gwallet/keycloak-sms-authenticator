@@ -22,12 +22,12 @@ public class KeycloakSmsRequiredMobileNumberFactory implements RequiredActionFac
 
     public String getId() {
         logger.debug("getId called ... returning " + KeycloakSmsRequiredMobileNumber.PROVIDER_ID);
-        return KeycloakSmsRequiredAction.PROVIDER_ID;
+        return KeycloakSmsRequiredMobileNumber.PROVIDER_ID;
     }
 
     public String getDisplayText() {
         logger.debug("getDisplayText called ...");
-        return "SMS Authentication";
+        return "SMS Auth. mobile nr check";
     }
 
     public void init(Config.Scope config) {

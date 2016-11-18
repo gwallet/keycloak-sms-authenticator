@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Created by joris on 18/11/2016.
  */
-public class Util {
+public class SMSAuthenticatorUtil {
     public static String getAttributeValue(UserModel user, String attributeName) {
         String result = null;
         List<String> values = user.getAttribute(attributeName);

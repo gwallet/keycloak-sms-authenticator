@@ -4,11 +4,12 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
-import org.keycloak.models.*;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +29,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     public void authenticate(AuthenticationFlowContext context) {
         logger.info("authenticate called ... context = " + context);
 
-        String mobileNumber = Util.getAttributeValue(context.getUser(), Contstants.ATTR_MOBILE);
+        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), SMSAuthenticatorContstants.ATTR_MOBILE);
         if(mobileNumber != null) {
             // The mobile number is configured --> send an SMS
 
@@ -68,9 +69,9 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     protected boolean validateAnswer(AuthenticationFlowContext context) {
         logger.info("validateAnswer called ... context = " + context);
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
-        String secret = formData.getFirst(Contstants.ANSW_SMS_CODE);
+        String secret = formData.getFirst(SMSAuthenticatorContstants.ANSW_SMS_CODE);
 
-        String mobileNumber = Util.getAttributeValue(context.getUser(), Contstants.ATTR_MOBILE);
+        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), SMSAuthenticatorContstants.ATTR_MOBILE);
 
         String expectedCode = smsCodes.get(mobileNumber);
         logger.info("Expected code = " + expectedCode + "    entered code = " + secret);
@@ -86,7 +87,8 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         logger.info("configuredFor called ... session=" + session + ", realm=" + realm + ", user=" + user);
-        boolean result = true; // session.users().configuredForCredentialType(CREDENTIAL_TYPE, realm, user);
+//        boolean result = true;
+        boolean result = session.users().configuredForCredentialType(CREDENTIAL_TYPE, realm, user);
         logger.info("... returning "  +result);
         return result;
     }

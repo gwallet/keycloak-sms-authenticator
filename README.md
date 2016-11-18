@@ -1,16 +1,26 @@
 # keycloak-sms-authenticator
 
+To install the SMS Authenticator one has to:
 
-KEYCLOAK_HOME/bin/
-/Users/joris/tools/keycloak-2.2.1.Final/bin/jboss-cli.sh --command="module add --name=com.alliander.keycloak.authenticator.sms-authenticator --resources=target/keycloak-sms-authenticator.jar --dependencies=org.keycloak.keycloak-core,org.keycloak.keycloak-server-spi,org.keycloak.keycloak-services,org.jboss.resteasy.resteasy-jaxrs,javax.ws.rs.api"
+* Add the jar to the Keycloak server:
+`cp target/keycloak-sms-authenticator.jar _KEYCLOAK_HOME_/providers/`
+
+* Add two templates to the Keycloak server:
+`cp templates/sms-validation.ftl _KEYCLOAK_HOME_/themes/base/login/`
+`cp templates/sms_validtion_missing_mobile.ftl _KEYCLOAK_HOME_/themes/base/login/`
 
 
+Configure your REALM to use the SMS Authentication.
+First create a new REALM (or select a previously created REALM).
 
-cp target/keycloak-sms-authenticator.jar /Users/joris/tools/keycloak-2.2.1.Final/providers/
+Under Authentication > Flows:
+* Copy 'Browse' flow to 'Browser with SMS' flow
+* Click on 'Actions > Add execution on the 'Browser with SMS Forms' line and add the 'SMS Authentication'
+* Set 'SMS Authentication' to 'REQUIRED'
 
+Under Authentication > Bindings:
+* Select 'Browser with SMS' as the 'Browser Flow' for the REALM.
 
-
-cp sms-validation.ftl /Users/joris/tools/keycloak-2.2.1.Final/themes/base/login/
-cp sms_validtion_config.ftl /Users/joris/tools/keycloak-2.2.1.Final/themes/base/login/
-
-cp sms_validtion_missing_mobile.ftl /Users/joris/tools/keycloak-2.2.1.Final/themes/base/login/
+Under Authentication > Required Actions:
+* Click on Register and select 'SMS Authentication' to add the Required Action to the REALM.
+* Make sure that for the 'SMS Authentication' both the 'Enabled' and 'Default Action' check boes are checked.
