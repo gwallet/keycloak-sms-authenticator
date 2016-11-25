@@ -6,4 +6,5 @@ package com.alliander.keycloak.authenticator;
 public class SMSAuthenticatorContstants {
     public static final String ATTR_MOBILE = "mobileNumber";
     public static final String ANSW_SMS_CODE = "smsCode";
+    public static final String CONF_PRP_SMS_CODE_TTL = "sms-auth.code.ttl";
 }

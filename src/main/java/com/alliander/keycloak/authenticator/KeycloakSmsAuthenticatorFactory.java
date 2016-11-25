@@ -32,6 +32,16 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
 
     private static final List<ProviderConfigProperty> configProperties = new ArrayList<ProviderConfigProperty>();
 
+    static {
+        ProviderConfigProperty property;
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL);
+        property.setLabel("SMS code time to live");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("The validity of the sent code in seconds.");
+        configProperties.add(property);
+    }
+
     public String getId() {
         logger.info("getId called ... returning " + PROVIDER_ID);
         return PROVIDER_ID;

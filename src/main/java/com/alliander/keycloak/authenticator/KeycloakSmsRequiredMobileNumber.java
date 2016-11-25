@@ -30,7 +30,7 @@ public class KeycloakSmsRequiredMobileNumber implements RequiredActionProvider {
             context.ignore();
         } else {
             // Mobile number is not configured
-            Response challenge = context.form().createForm("sms_validtion_missing_mobile.ftl");
+            Response challenge = context.form().createForm("sms_validation_missing_mobile.ftl");
             context.challenge(challenge);
         }
 //        List<String> mobileNumberList = context.getUser().getAttribute("mobile");
