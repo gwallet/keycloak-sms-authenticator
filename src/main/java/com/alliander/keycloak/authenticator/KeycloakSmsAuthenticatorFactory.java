@@ -40,6 +40,13 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         property.setType(ProviderConfigProperty.STRING_TYPE);
         property.setHelpText("The validity of the sent code in seconds.");
         configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_LENGTH);
+        property.setLabel("Length of the SMS code");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("Length of the SMS code.");
+        configProperties.add(property);
     }
 
     public String getId() {

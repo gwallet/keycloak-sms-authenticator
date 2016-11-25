@@ -7,15 +7,13 @@ import org.keycloak.authentication.Authenticator;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by joris on 11/11/2016.
@@ -26,25 +24,25 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     public static final String CREDENTIAL_TYPE = "sms_validation";
 
-    private static Map<String, SMSCode> smsCodes = new ConcurrentHashMap<String, SMSCode>();
+//    private static Map<String, SMSCode> smsCodes = new ConcurrentHashMap<String, SMSCode>();
 
 
-    public KeycloakSmsAuthenticator() {
-        Thread t = new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(60 * 1000);
-                    } catch (InterruptedException ex) {
-                    }
-                    cleanUpMap();
-                }
-            }
-        });
-
-        t.setDaemon(true);
-        t.start();
-    }
+//    public KeycloakSmsAuthenticator() {
+//        Thread t = new Thread(new Runnable() {
+//            public void run() {
+//                while (true) {
+//                    try {
+//                        Thread.sleep(60 * 1000);
+//                    } catch (InterruptedException ex) {
+//                    }
+//                    cleanUpMap();
+//                }
+//            }
+//        });
+//
+//        t.setDaemon(true);
+//        t.start();
+//    }
 
 
     public void authenticate(AuthenticationFlowContext context) {
@@ -53,22 +51,39 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), SMSAuthenticatorContstants.ATTR_MOBILE);
         if(mobileNumber != null) {
             // The mobile number is configured --> send an SMS
-            String code = getSmsCode();
-
             AuthenticatorConfigModel config = context.getAuthenticatorConfig();
-            long ttl = 15 * 60 * 1000; // 15 minutes in ms
-            if(config.getConfig() != null) {
-                // GET TTL in seconds
-                String ttlString = config.getConfig().get(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL);
-                try {
-                    ttl = Long.valueOf(ttlString) * 1000;
-                } catch (NumberFormatException nfe) {
-                    logger.error("Can not convert " + ttlString + " to a number.");
-                }
-            }
+
+//            int nrOfDigits = 8;
+//            if(config.getConfig() != null) {
+//                // GET TTL in seconds
+//                String nrOfDigitsStrings = config.getConfig().get(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL);
+//                try {
+//                    nrOfDigits = Integer.valueOf(nrOfDigitsStrings); // s --> ms
+//                } catch (NumberFormatException nfe) {
+//                    logger.error("Can not convert " + nrOfDigits + " to a number.");
+//                }
+//
+            long nrOfDigits = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
+            logger.info("Using nrOfDigits " + nrOfDigits);
+
+//            long ttl = 10 * 60 * 1000; // 10 minutes in ms
+//            if(config.getConfig() != null) {
+//                // GET TTL in seconds
+//                String ttlString = config.getConfig().get(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL);
+//                try {
+//                    ttl = Long.valueOf(ttlString) * 1000; // s --> ms
+//                } catch (NumberFormatException nfe) {
+//                    logger.error("Can not convert " + ttlString + " to a number.");
+//                }
+//            }
+            long ttl = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL, 10 * 60L); // 10 minutes in s
+
             logger.info("Using ttl " + ttl + " (ms)");
 
-            smsCodes.put(mobileNumber, new SMSCode(code, new Date().getTime() + ttl));
+            String code = getSmsCode(nrOfDigits);
+
+            storeSMSCode(context, code, new Date().getTime() + (ttl * 1000)); // s --> ms
+//            smsCodes.put(mobileNumber, new SMSCode(code, new Date().getTime() + ttl));
             if (sendSmsCode(mobileNumber, code)) {
 
                 Response challenge = context.form().createForm("sms-validation.ftl");
@@ -104,34 +119,48 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         context.success();
     }
 
+    private void storeSMSCode(AuthenticationFlowContext context, String code, Long expiringAt) {
+        UserCredentialModel credentials = new UserCredentialModel();
+        credentials.setType(SMSAuthenticatorContstants.USR_CRED_MDL_SMS_CODE);
+        credentials.setValue(code);
+        context.getSession().users().updateCredential(context.getRealm(), context.getUser(), credentials);
+
+        credentials.setType(SMSAuthenticatorContstants.USR_CRED_MDL_SMS_EXP_TIME);
+        credentials.setValue((expiringAt).toString());
+        context.getSession().users().updateCredential(context.getRealm(), context.getUser(), credentials);
+    }
 
     protected boolean validateAnswer(AuthenticationFlowContext context) {
         boolean result = false;
 
         logger.info("validateAnswer called ... context = " + context);
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
-        String secret = formData.getFirst(SMSAuthenticatorContstants.ANSW_SMS_CODE);
+        String enteredCode = formData.getFirst(SMSAuthenticatorContstants.ANSW_SMS_CODE);
 
-        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), SMSAuthenticatorContstants.ATTR_MOBILE);
+//        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), SMSAuthenticatorContstants.ATTR_MOBILE);
+//
+//        SMSCode expectedCode = smsCodes.get(mobileNumber);
 
-        SMSCode expectedCode = smsCodes.get(mobileNumber);
+        String expectedCode = SMSAuthenticatorUtil.getCredentialValue(context.getUser(), SMSAuthenticatorContstants.USR_CRED_MDL_SMS_CODE);
+        String expTimeString = SMSAuthenticatorUtil.getCredentialValue(context.getUser(), SMSAuthenticatorContstants.USR_CRED_MDL_SMS_EXP_TIME);
 
-        logger.info("Expected code = " + expectedCode.getCode() + "    entered code = " + secret);
-        logger.info("... returning " + secret.equals(expectedCode));
+
+
+        logger.info("Expected code = " + expectedCode + "    entered code = " + enteredCode);
 
         if(expectedCode != null) {
-            result = secret.equals(expectedCode.getCode());
+            result = enteredCode.equals(expectedCode);
             logger.info("result : " + result);
 
-            logger.info("expectedCode.expirationTime : " + expectedCode.expirationTime);
+            logger.info("expTimeString : " + expTimeString);
             logger.info("new Date().getTime()        : " + new Date().getTime());
             if(result) {
-                if (expectedCode.expirationTime < new Date().getTime()) {
+                if (Long.parseLong(expTimeString) < new Date().getTime()) {
                     logger.info("Code is expired !!");
                     result = false;
                 }
-                logger.info("Removing code for " + mobileNumber);
-                smsCodes.remove(mobileNumber);
+//                logger.info("Removing code for " + mobileNumber);
+//                smsCodes.remove(mobileNumber);
             }
         }
         logger.info("result : " + result);
@@ -160,9 +189,14 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     }
 
 
-    private String getSmsCode() {
-        Random r = new Random ();
-        return Long.toString (r.nextLong (), 36).replaceAll("-", "");
+    private String getSmsCode(long nrOfDigits) {
+//        Random r = new Random ();
+//        return Long.toString (r.nextLong (), 36).replaceAll("-", "");
+
+        long maxValue = 10 ^ nrOfDigits - 1;
+        Random r = new Random();
+        long code = (long)(r.nextFloat() * maxValue);
+        return Long.toString(code);
     }
 
     private boolean sendSmsCode(String mobileNumber, String code) {
@@ -173,43 +207,43 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     }
 
 
-    public void cleanUpMap() {
-        logger.info("cleanUpMap called ...");
-        final long expirationTime = new Date().getTime();
-        for(Iterator<String> iter = smsCodes.keySet().iterator(); iter.hasNext(); ) {
-            String key = iter.next();
-            if(smsCodes.get(key) != null && smsCodes.get(key).getExpirationTime() < expirationTime) {
-                logger.info("removing smsCode for " + key);
-                smsCodes.remove(key);
-            }
-        }
-    }
+//    public void cleanUpMap() {
+//        logger.info("cleanUpMap called ...");
+//        final long expirationTime = new Date().getTime();
+//        for(Iterator<String> iter = smsCodes.keySet().iterator(); iter.hasNext(); ) {
+//            String key = iter.next();
+//            if(smsCodes.get(key) != null && smsCodes.get(key).getExpirationTime() < expirationTime) {
+//                logger.info("removing smsCode for " + key);
+//                smsCodes.remove(key);
+//            }
+//        }
+//    }
 
 
-    private class SMSCode {
-        private String code;
-        private long expirationTime;
-
-        public SMSCode(String code, long expirationTime) {
-            this.code = code;
-            this.expirationTime = expirationTime;
-        }
-
-        public String getCode() {
-            return code;
-        }
-
-        public void setCode(String code) {
-            this.code = code;
-        }
-
-        public long getExpirationTime() {
-            return expirationTime;
-        }
-
-        public void setExpirationTime(long expirationTime) {
-            this.expirationTime = expirationTime;
-        }
-    }
+//    private class SMSCode {
+//        private String code;
+//        private long expirationTime;
+//
+//        public SMSCode(String code, long expirationTime) {
+//            this.code = code;
+//            this.expirationTime = expirationTime;
+//        }
+//
+//        public String getCode() {
+//            return code;
+//        }
+//
+//        public void setCode(String code) {
+//            this.code = code;
+//        }
+//
+//        public long getExpirationTime() {
+//            return expirationTime;
+//        }
+//
+//        public void setExpirationTime(long expirationTime) {
+//            this.expirationTime = expirationTime;
+//        }
+//    }
 
 }
