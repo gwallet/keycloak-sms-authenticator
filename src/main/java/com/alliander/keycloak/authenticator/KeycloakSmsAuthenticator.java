@@ -1,5 +1,18 @@
 package com.alliander.keycloak.authenticator;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
@@ -10,8 +23,12 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
 
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Date;
 import java.util.Random;
 
@@ -29,26 +46,6 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         INVALID,
         EXPIRED
     }
-
-//    private static Map<String, SMSCode> smsCodes = new ConcurrentHashMap<String, SMSCode>();
-
-
-//    public KeycloakSmsAuthenticator() {
-//        Thread t = new Thread(new Runnable() {
-//            public void run() {
-//                while (true) {
-//                    try {
-//                        Thread.sleep(60 * 1000);
-//                    } catch (InterruptedException ex) {
-//                    }
-//                    cleanUpMap();
-//                }
-//            }
-//        });
-//
-//        t.setDaemon(true);
-//        t.start();
-//    }
 
 
     public void authenticate(AuthenticationFlowContext context) {
@@ -70,7 +67,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             String code = getSmsCode(nrOfDigits);
 
             storeSMSCode(context, code, new Date().getTime() + (ttl * 1000)); // s --> ms
-            if (sendSmsCode(mobileNumber, code)) {
+            if (sendSmsCode(mobileNumber, code, context.getAuthenticatorConfig())) {
                 Response challenge = context.form().createForm("sms-validation.ftl");
                 context.challenge(challenge);
             } else {
@@ -127,6 +124,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         credentials.setValue((expiringAt).toString());
         context.getSession().users().updateCredential(context.getRealm(), context.getUser(), credentials);
     }
+
 
     protected CODE_STATUS validateCode(AuthenticationFlowContext context) {
         CODE_STATUS result = CODE_STATUS.INVALID;
@@ -188,11 +186,124 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         return Long.toString(code);
     }
 
-    private boolean sendSmsCode(String mobileNumber, String code) {
+
+
+
+    private boolean sendSmsCode(String mobileNumber, String code, AuthenticatorConfigModel config) {
         // Send an SMS
         if(logger.isInfoEnabled()) { logger.info("Should send an SMS"); }
         logger.info("Sending " + code + "  to mobileNumber " + mobileNumber);
-        return true;
+
+        String smsUrl = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_URL);
+        String smsUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_USERNAME);
+        String smsPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_PASSWORD);
+
+        String proxyUrl = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_PROXY_URL);
+        String proxyUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_PROXY_USERNAME);
+        String proxyPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_PROXY_PASSWORD);
+
+        CloseableHttpClient httpClient = null;
+        try {
+            URL smsURL = (smsUrl != null && smsUrl.length() > 0) ? new URL(smsUrl) : null;
+            URL proxyURL = (proxyUrl != null && proxyUrl.length() > 0) ? new URL(proxyUrl) : null;
+
+            if(smsURL == null) {
+                logger.error("SMS gateway URL is not configured.");
+                return false;
+            }
+
+            CredentialsProvider credsProvider = getCredentialsProvider(smsUsr, smsPwd, proxyUsr, proxyPwd, smsURL, proxyURL);
+
+
+            HttpHost target = new HttpHost(smsURL.getHost(), smsURL.getPort(), smsURL.getProtocol());
+            HttpHost proxy = (proxyURL != null) ? new HttpHost(proxyURL.getHost(), proxyURL.getPort(), proxyURL.getProtocol()) : null;
+
+            httpClient = HttpClients.custom()
+                    .setDefaultCredentialsProvider(credsProvider)
+                    .build();
+
+            RequestConfig requestConfig;
+//            if(proxyURL != null) {
+                requestConfig = RequestConfig.custom()
+                        .setProxy(proxy)
+                        .build();
+//            } else {
+//                requestConfig = RequestConfig.custom()
+//                        .build();
+//            }
+
+            String httpMethod = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_METHOD);
+            String smsText = createMessage(code, config);
+            if(httpMethod.equals(HttpMethod.GET)) {
+
+                String path = smsURL.getPath();
+                if(smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
+                    path += smsURL.getQuery();
+                }
+                logger.info("path " + path);
+                path = path.replaceFirst("\\{message\\}", URLEncoder.encode(smsText, "UTF-8"));
+                path = path.replaceFirst("\\{phonenumber\\}", URLEncoder.encode(mobileNumber, "UTF-8"));
+                logger.info("path " + path);
+
+                HttpGet httpGet = new HttpGet(path);
+                httpGet.setConfig(requestConfig);
+
+                logger.info("Executing request " + httpGet.getRequestLine() + " to " + target + " via " + proxy);
+
+                CloseableHttpResponse response = httpClient.execute(target, httpGet);
+                int httpResponseCode = response.getStatusLine().getStatusCode();
+                response.close();
+                return httpResponseCode == 200;
+
+            } else if (httpMethod.equals(HttpMethod.POST)) {
+                HttpPost httpPost = new HttpPost(smsURL.getPath());
+                httpPost.setConfig(requestConfig);
+
+                HttpEntity entity = new ByteArrayEntity(smsText.getBytes("UTF-8"));
+                httpPost.setEntity(entity);
+
+                CloseableHttpResponse response = httpClient.execute(httpPost);
+                int httpResponseCode = response.getStatusLine().getStatusCode();
+                response.close();
+                return httpResponseCode == 200;
+            }
+            return true;
+        } catch (IOException e) {
+            logger.error(e);
+            return false;
+        } finally {
+            if(httpClient != null) {
+                try {
+                    httpClient.close();
+                } catch(IOException ignore) {
+                    // Ignore ...
+                }
+            }
+        }
+    }
+
+    private CredentialsProvider getCredentialsProvider(String smsUsr, String smsPwd, String proxyUsr, String proxyPwd, URL smsURL, URL proxyURL) {
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+
+        if (smsUsr != null && smsPwd != null) {
+            credsProvider.setCredentials(
+                    new AuthScope(smsURL.getHost(), smsURL.getPort()),
+                    new UsernamePasswordCredentials(smsUsr, smsPwd));
+
+        }
+
+        if (proxyUsr != null && proxyPwd != null) {
+            credsProvider.setCredentials(
+                    new AuthScope(proxyURL.getHost(), proxyURL.getPort()),
+                    new UsernamePasswordCredentials(proxyUsr, proxyPwd));
+
+        }
+        return credsProvider;
+    }
+
+    private String createMessage(String code, AuthenticatorConfigModel config) {
+        String text = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_TEXT);
+        return text.replaceAll("%sms-code%", code);
     }
 
 }

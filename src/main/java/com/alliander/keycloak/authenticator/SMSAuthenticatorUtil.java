@@ -53,6 +53,10 @@ public class SMSAuthenticatorUtil {
         return value;
     }
 
+    public static Long getConfigLong(AuthenticatorConfigModel config, String configName) {
+        return getConfigLong(config, configName, null);
+    }
+
     public static Long getConfigLong(AuthenticatorConfigModel config, String configName, Long defaultValue) {
 
         Long value = defaultValue;
