@@ -10,6 +10,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
 
+import javax.ws.rs.HttpMethod;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,12 +35,85 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
 
     static {
         ProviderConfigProperty property;
+
+        // SMS Code
         property = new ProviderConfigProperty();
         property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL);
         property.setLabel("SMS code time to live");
         property.setType(ProviderConfigProperty.STRING_TYPE);
         property.setHelpText("The validity of the sent code in seconds.");
         configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_LENGTH);
+        property.setLabel("Length of the SMS code");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("Length of the SMS code.");
+        configProperties.add(property);
+
+        // SMS Text
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_TEXT);
+        property.setLabel("Template of text to send to the user");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("Use %sms-code% as placeholder for the generated SMS code.");
+        configProperties.add(property);
+
+        // SMS Gateway
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_URL);
+        property.setLabel("URL of SMS gateway");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("Use {message} as a placeholder for the message and {phonenumber} as a placeholder for the mobile number when the SMS text is to be passed as a URL parameter.");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_USERNAME);
+        property.setLabel("Username to authenticate towards the SMS Gateway");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_PASSWORD);
+        property.setLabel("Password to authenticate towards the SMS Gateway");
+        property.setType(ProviderConfigProperty.PASSWORD);
+        property.setHelpText("");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_SMS_METHOD);
+        property.setLabel("HTTP Method");
+        property.setHelpText("");
+        List<String> methods = new ArrayList(2);
+        methods.add(HttpMethod.GET);
+        methods.add(HttpMethod.POST);
+        property.setType(ProviderConfigProperty.LIST_TYPE);
+        property.setDefaultValue(methods);
+        configProperties.add(property);
+
+        // HTTP Proxy
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_PROXY_URL);
+        property.setLabel("URL of HTTP proxy to use when calling the SMS gateway");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("Emtpy when no proxy is needed");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_PROXY_USERNAME);
+        property.setLabel("Username to authenticate towards the HTTP proxy");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("");
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(SMSAuthenticatorContstants.CONF_PRP_PROXY_PASSWORD);
+        property.setLabel("Password to authenticate towards the HTTP proxy");
+        property.setType(ProviderConfigProperty.PASSWORD);
+        property.setHelpText("");
+        configProperties.add(property);
+
     }
 
     public String getId() {
