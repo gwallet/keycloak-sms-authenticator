@@ -28,6 +28,7 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Date;
@@ -236,27 +237,15 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     .build();
 
             RequestConfig requestConfig;
-//            if(proxyURL != null) {
                 requestConfig = RequestConfig.custom()
                         .setProxy(proxy)
                         .build();
-//            } else {
-//                requestConfig = RequestConfig.custom()
-//                        .build();
-//            }
 
             String httpMethod = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_METHOD);
             String smsText = createMessage(code, config);
             if(httpMethod.equals(HttpMethod.GET)) {
 
-                String path = smsURL.getPath();
-                if(smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
-                    path += smsURL.getQuery();
-                }
-                logger.info("path " + path);
-                path = path.replaceFirst("\\{message\\}", URLEncoder.encode(smsText, "UTF-8"));
-                path = path.replaceFirst("\\{phonenumber\\}", URLEncoder.encode(mobileNumber, "UTF-8"));
-                logger.info("path " + path);
+                String path = getPath(mobileNumber, smsURL, smsText);
 
                 HttpGet httpGet = new HttpGet(path);
                 httpGet.setConfig(requestConfig);
@@ -272,16 +261,23 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 return sl.getStatusCode() == 200;
 
             } else if (httpMethod.equals(HttpMethod.POST)) {
-                HttpPost httpPost = new HttpPost(smsURL.getPath());
+
+                String path = getPath(mobileNumber, smsURL, smsText);
+                String uri = smsURL.getProtocol() + "://" + smsURL.getHost() + ":" + smsURL.getPort() + path;
+
+                HttpPost httpPost = new HttpPost(uri);
                 httpPost.setConfig(requestConfig);
 
                 HttpEntity entity = new ByteArrayEntity(smsText.getBytes("UTF-8"));
                 httpPost.setEntity(entity);
 
                 CloseableHttpResponse response = httpClient.execute(httpPost);
-                int httpResponseCode = response.getStatusLine().getStatusCode();
+                StatusLine sl = response.getStatusLine();
                 response.close();
-                return httpResponseCode == 200;
+                if(sl.getStatusCode() != 200) {
+                    logger.error("SMS code for " + mobileNumber + " could not be sent: " + sl.getStatusCode() +  " - " + sl.getReasonPhrase());
+                }
+                return sl.getStatusCode() == 200;
             }
             return true;
         } catch (IOException e) {
@@ -298,17 +294,27 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         }
     }
 
+    private String getPath(String mobileNumber, URL smsURL, String smsText) throws UnsupportedEncodingException {
+        String path = smsURL.getPath();
+        if(smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
+            path += smsURL.getQuery();
+        }
+        path = path.replaceFirst("\\{message\\}", URLEncoder.encode(smsText, "UTF-8"));
+        path = path.replaceFirst("\\{phonenumber\\}", URLEncoder.encode(mobileNumber, "UTF-8"));
+        return path;
+    }
+
     private CredentialsProvider getCredentialsProvider(String smsUsr, String smsPwd, String proxyUsr, String proxyPwd, URL smsURL, URL proxyURL) {
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
 
-        if (smsUsr != null && smsPwd != null) {
+        if (isNotEmpty(smsUsr) && isNotEmpty(smsPwd)) {
             credsProvider.setCredentials(
                     new AuthScope(smsURL.getHost(), smsURL.getPort()),
                     new UsernamePasswordCredentials(smsUsr, smsPwd));
 
         }
 
-        if (proxyUsr != null && proxyPwd != null) {
+        if (isNotEmpty(proxyUsr) && isNotEmpty(proxyPwd)) {
             credsProvider.setCredentials(
                     new AuthScope(proxyURL.getHost(), proxyURL.getPort()),
                     new UsernamePasswordCredentials(proxyUsr, proxyPwd));
@@ -320,6 +326,10 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     private String createMessage(String code, AuthenticatorConfigModel config) {
         String text = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_TEXT);
         return text.replaceAll("%sms-code%", code);
+    }
+
+    private boolean isNotEmpty(String s) {
+        return (s != null && s.length() > 0);
     }
 
 }
