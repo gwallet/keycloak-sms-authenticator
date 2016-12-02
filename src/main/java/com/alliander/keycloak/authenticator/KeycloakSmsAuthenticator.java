@@ -2,6 +2,7 @@ package com.alliander.keycloak.authenticator;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -51,10 +52,22 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     public void authenticate(AuthenticationFlowContext context) {
         logger.info("authenticate called ... context = " + context);
 
-        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), SMSAuthenticatorContstants.ATTR_MOBILE);
+        AuthenticatorConfigModel config = context.getAuthenticatorConfig();
+
+        String mobileNumberAttribute = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_USR_ATTR_MOBILE);
+        if(mobileNumberAttribute == null) {
+            logger.error("Mobile number attribute is not configured for the SMS Authenticator.");
+            Response challenge =  context.form()
+                    .setError("Mobile number can not be determined.")
+                    .createForm("sms-validation-error.ftl");
+            context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge);
+            return;
+        }
+
+        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), mobileNumberAttribute);
         if(mobileNumber != null) {
             // The mobile number is configured --> send an SMS
-            AuthenticatorConfigModel config = context.getAuthenticatorConfig();
+
 
             long nrOfDigits = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
             logger.info("Using nrOfDigits " + nrOfDigits);
@@ -73,7 +86,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             } else {
                 Response challenge =  context.form()
                         .setError("SMS could not be sent.")
-                        .createForm("sms_validation_missing_mobile.ftl");
+                        .createForm("sms-validation-error.ftl");
                 context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge);
                 return;
             }
@@ -81,7 +94,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             // The mobile number is NOT configured --> complain
             Response challenge =  context.form()
                     .setError("Missing mobile number")
-                    .createForm("sms_validation_missing_mobile.ftl");
+                    .createForm("sms-validation-error.ftl");
             context.failureChallenge(AuthenticationFlowError.CLIENT_CREDENTIALS_SETUP_REQUIRED, challenge);
             return;
         }
@@ -251,9 +264,12 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 logger.info("Executing request " + httpGet.getRequestLine() + " to " + target + " via " + proxy);
 
                 CloseableHttpResponse response = httpClient.execute(target, httpGet);
-                int httpResponseCode = response.getStatusLine().getStatusCode();
+                StatusLine sl = response.getStatusLine();
                 response.close();
-                return httpResponseCode == 200;
+                if(sl.getStatusCode() != 200) {
+                    logger.error("SMS code for " + mobileNumber + " could not be sent: " + sl.getStatusCode() +  " - " + sl.getReasonPhrase());
+                }
+                return sl.getStatusCode() == 200;
 
             } else if (httpMethod.equals(HttpMethod.POST)) {
                 HttpPost httpPost = new HttpPost(smsURL.getPath());
