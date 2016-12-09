@@ -111,7 +111,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 challenge =  context.form()
                         .setError("badCode")
                         .createForm("sms-validation.ftl");
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
+                context.failureChallenge(AuthenticationFlowError.EXPIRED_CODE, challenge);
                 break;
 
             case INVALID:
