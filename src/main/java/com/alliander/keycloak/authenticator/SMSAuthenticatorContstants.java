@@ -17,6 +17,8 @@ public class SMSAuthenticatorContstants {
     public static final String CONF_PRP_SMS_METHOD = "sms-auth.sms.method";
     public static final String CONF_PRP_SMS_USERNAME = "sms-auth.sms.username";
     public static final String CONF_PRP_SMS_PASSWORD = "sms-auth.sms.password";
+    public static final String CONF_PRP_SMS_AUTHTYPE = "sms-auth.sms.authtype";
+    public static final String CONF_PRP_CONTENT_TYPE = "sms-auth.content.type";
 
     public static final String CONF_PRP_PROXY_URL = "sms-auth.proxy.url";
     public static final String CONF_PRP_PROXY_USERNAME = "sms-auth.proxy.username";
@@ -25,5 +27,9 @@ public class SMSAuthenticatorContstants {
     // User credentials (used to persist the sent sms code + expiration time cluster wide)
     public static final String USR_CRED_MDL_SMS_CODE = "sms-auth.code";
     public static final String USR_CRED_MDL_SMS_EXP_TIME = "sms-auth.exp-time";
+
+    // Authentication methods
+    public static final String AUTH_METHOD_BASIC = "Basic authentication";
+    public static final String AUTH_METHOD_INMESSAGE = "In message authentication";
 
 }

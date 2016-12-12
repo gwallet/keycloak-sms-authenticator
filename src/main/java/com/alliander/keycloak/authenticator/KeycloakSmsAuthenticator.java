@@ -194,14 +194,11 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             throw new RuntimeException("Nr of digits must be bigger than 0");
         }
 
-        double maxValue = Math.pow(10.0, nrOfDigits - 1.0); // 10 ^ nrOfDigits - 1;
+        double maxValue = Math.pow(10.0, nrOfDigits); // 10 ^ nrOfDigits;
         Random r = new Random();
         long code = (long)(r.nextFloat() * maxValue);
         return Long.toString(code);
     }
-
-
-
 
     private boolean sendSmsCode(String mobileNumber, String code, AuthenticatorConfigModel config) {
         // Send an SMS
@@ -215,6 +212,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         String proxyUrl = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_PROXY_URL);
         String proxyUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_PROXY_USERNAME);
         String proxyPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_PROXY_PASSWORD);
+        String contentType = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_CONTENT_TYPE);
 
         CloseableHttpClient httpClient = null;
         try {
@@ -226,8 +224,13 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 return false;
             }
 
-            CredentialsProvider credsProvider = getCredentialsProvider(smsUsr, smsPwd, proxyUsr, proxyPwd, smsURL, proxyURL);
 
+            CredentialsProvider credsProvider;
+            if(SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorContstants.AUTH_METHOD_INMESSAGE)) {
+                credsProvider = getCredentialsProvider(null, null, proxyUsr, proxyPwd, smsURL, proxyURL);
+            } else {
+                credsProvider = getCredentialsProvider(smsUsr, smsPwd, proxyUsr, proxyPwd, smsURL, proxyURL);
+            }
 
             HttpHost target = new HttpHost(smsURL.getHost(), smsURL.getPort(), smsURL.getProtocol());
             HttpHost proxy = (proxyURL != null) ? new HttpHost(proxyURL.getHost(), proxyURL.getPort(), proxyURL.getProtocol()) : null;
@@ -242,13 +245,16 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                         .build();
 
             String httpMethod = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_METHOD);
-            String smsText = createMessage(code, config);
+            String smsText = createMessage(code, mobileNumber, config);
             if(httpMethod.equals(HttpMethod.GET)) {
 
                 String path = getPath(mobileNumber, smsURL, smsText);
 
                 HttpGet httpGet = new HttpGet(path);
                 httpGet.setConfig(requestConfig);
+                if(isNotEmpty(contentType)) {
+                    httpGet.addHeader("Content-type", contentType);
+                }
 
                 logger.info("Executing request " + httpGet.getRequestLine() + " to " + target + " via " + proxy);
 
@@ -267,6 +273,9 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
                 HttpPost httpPost = new HttpPost(uri);
                 httpPost.setConfig(requestConfig);
+                if(isNotEmpty(contentType)) {
+                    httpPost.addHeader("Content-type", contentType);
+                }
 
                 HttpEntity entity = new ByteArrayEntity(smsText.getBytes("UTF-8"));
                 httpPost.setEntity(entity);
@@ -293,6 +302,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             }
         }
     }
+
 
     private String getPath(String mobileNumber, URL smsURL, String smsText) throws UnsupportedEncodingException {
         String path = smsURL.getPath();
@@ -323,9 +333,20 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         return credsProvider;
     }
 
-    private String createMessage(String code, AuthenticatorConfigModel config) {
+    private String createMessage(String code, String mobileNumber, AuthenticatorConfigModel config) {
         String text = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_TEXT);
-        return text.replaceAll("%sms-code%", code);
+        text = text.replaceAll("%sms-code%", code);
+        text = text.replaceAll("%phonenumber%", mobileNumber);
+
+        if(SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorContstants.AUTH_METHOD_INMESSAGE)) {
+            String smsUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_USERNAME);
+            String smsPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_PASSWORD);
+
+            text = text.replaceAll("%user%", smsUsr);
+            text = text.replaceAll("%password%", smsPwd);
+        }
+
+        return text;
     }
 
     private boolean isNotEmpty(String s) {
