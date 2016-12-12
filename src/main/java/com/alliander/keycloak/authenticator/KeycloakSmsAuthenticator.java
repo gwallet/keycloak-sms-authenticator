@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
 import org.keycloak.authentication.AuthenticationFlowError;
 import org.keycloak.authentication.Authenticator;
+import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -115,10 +116,18 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 break;
 
             case INVALID:
-                challenge =  context.form()
-                        .setError("badCode")
-                        .createForm("sms-validation.ftl");
-                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
+                if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
+                        context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.ALTERNATIVE) {
+                    logger.info("Calling context.attempted()");
+                    context.attempted();
+                } else if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
+                    challenge =  context.form()
+                            .setError("badCode")
+                            .createForm("sms-validation.ftl");
+                    context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
+                } else {
+                    // Something strange happened
+                }
                 break;
 
             case VALID:
