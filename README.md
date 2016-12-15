@@ -16,7 +16,9 @@ First create a new REALM (or select a previously created REALM).
 Under Authentication > Flows:
 * Copy 'Browse' flow to 'Browser with SMS' flow
 * Click on 'Actions > Add execution on the 'Browser with SMS Forms' line and add the 'SMS Authentication'
-* Set 'SMS Authentication' to 'REQUIRED'
+* Set 'SMS Authentication' to 'REQUIRED' or 'ALTERNATIVE'
+* To configure the SMS Authernticator, click on Actions  Config and fill in the attributes.
+
 
 Under Authentication > Bindings:
 * Select 'Browser with SMS' as the 'Browser Flow' for the REALM.
