@@ -52,7 +52,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
 
     public void authenticate(AuthenticationFlowContext context) {
-        logger.info("authenticate called ... context = " + context);
+        logger.debug("authenticate called ... context = " + context);
 
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
 
@@ -72,12 +72,12 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
 
             long nrOfDigits = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
-            logger.info("Using nrOfDigits " + nrOfDigits);
+            logger.debug("Using nrOfDigits " + nrOfDigits);
 
 
             long ttl = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_TTL, 10 * 60L); // 10 minutes in s
 
-            logger.info("Using ttl " + ttl + " (s)");
+            logger.debug("Using ttl " + ttl + " (s)");
 
             String code = getSmsCode(nrOfDigits);
 
@@ -104,13 +104,13 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
 
     public void action(AuthenticationFlowContext context) {
-        logger.info("action called ... context = " + context);
+        logger.debug("action called ... context = " + context);
         CODE_STATUS status = validateCode(context);
         Response challenge = null;
         switch (status) {
             case EXPIRED:
                 challenge =  context.form()
-                        .setError("badCode")
+                        .setError("code is expired")
                         .createForm("sms-validation.ftl");
                 context.failureChallenge(AuthenticationFlowError.EXPIRED_CODE, challenge);
                 break;
@@ -118,7 +118,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             case INVALID:
                 if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
                         context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.ALTERNATIVE) {
-                    logger.info("Calling context.attempted()");
+                    logger.debug("Calling context.attempted()");
                     context.attempted();
                 } else if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
                     challenge =  context.form()
@@ -127,6 +127,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
                 } else {
                     // Something strange happened
+                    logger.warn("Undefined execution ...");
                 }
                 break;
 
@@ -137,6 +138,8 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         }
     }
 
+    // Store the code + expiration time in a UserCredential. Keycloak will persist these in the DB.
+    // When the code is validated on another node (in a clustered environment) the other nodes have access to it's values too.
     private void storeSMSCode(AuthenticationFlowContext context, String code, Long expiringAt) {
         UserCredentialModel credentials = new UserCredentialModel();
         credentials.setType(SMSAuthenticatorContstants.USR_CRED_MDL_SMS_CODE);
@@ -152,49 +155,49 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     protected CODE_STATUS validateCode(AuthenticationFlowContext context) {
         CODE_STATUS result = CODE_STATUS.INVALID;
 
-        logger.info("validateCode called ... ");
+        logger.debug("validateCode called ... ");
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         String enteredCode = formData.getFirst(SMSAuthenticatorContstants.ANSW_SMS_CODE);
 
         String expectedCode = SMSAuthenticatorUtil.getCredentialValue(context.getUser(), SMSAuthenticatorContstants.USR_CRED_MDL_SMS_CODE);
         String expTimeString = SMSAuthenticatorUtil.getCredentialValue(context.getUser(), SMSAuthenticatorContstants.USR_CRED_MDL_SMS_EXP_TIME);
 
-        logger.info("Expected code = " + expectedCode + "    entered code = " + enteredCode);
+        logger.debug("Expected code = " + expectedCode + "    entered code = " + enteredCode);
 
         if(expectedCode != null) {
             result = enteredCode.equals(expectedCode) ? CODE_STATUS.VALID : CODE_STATUS.INVALID;
             long now = new Date().getTime();
 
-            logger.info("Valid code expires in " + (Long.parseLong(expTimeString) - now) + " ms");
+            logger.debug("Valid code expires in " + (Long.parseLong(expTimeString) - now) + " ms");
             if(result == CODE_STATUS.VALID) {
                 if (Long.parseLong(expTimeString) < now) {
-                    logger.info("Code is expired !!");
+                    logger.debug("Code is expired !!");
                     result = CODE_STATUS.EXPIRED;
                 }
             }
         }
-        logger.info("result : " + result);
+        logger.debug("result : " + result);
         return result;
     }
 
     public boolean requiresUser() {
-        logger.info("requiresUser called ... returning true");
+        logger.debug("requiresUser called ... returning true");
         return true;
     }
 
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
-        logger.info("configuredFor called ... session=" + session + ", realm=" + realm + ", user=" + user);
+        logger.debug("configuredFor called ... session=" + session + ", realm=" + realm + ", user=" + user);
         boolean result = true;
-        logger.info("... returning "  +result);
+        logger.debug("... returning "  +result);
         return result;
     }
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
-        logger.info("setRequiredActions called ... session=" + session + ", realm=" + realm + ", user=" + user);
+        logger.debug("setRequiredActions called ... session=" + session + ", realm=" + realm + ", user=" + user);
     }
 
     public void close() {
-        logger.info("close called ...");
+        logger.debug("close called ...");
     }
 
 
@@ -211,8 +214,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     private boolean sendSmsCode(String mobileNumber, String code, AuthenticatorConfigModel config) {
         // Send an SMS
-        if(logger.isInfoEnabled()) { logger.info("Should send an SMS"); }
-        logger.info("Sending " + code + "  to mobileNumber " + mobileNumber);
+        logger.debug("Sending " + code + "  to mobileNumber " + mobileNumber);
 
         String smsUrl = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_URL);
         String smsUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_USERNAME);
@@ -265,7 +267,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     httpGet.addHeader("Content-type", contentType);
                 }
 
-                logger.info("Executing request " + httpGet.getRequestLine() + " to " + target + " via " + proxy);
+                logger.debug("Executing request " + httpGet.getRequestLine() + " to " + target + " via " + proxy);
 
                 CloseableHttpResponse response = httpClient.execute(target, httpGet);
                 StatusLine sl = response.getStatusLine();
@@ -326,6 +328,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     private CredentialsProvider getCredentialsProvider(String smsUsr, String smsPwd, String proxyUsr, String proxyPwd, URL smsURL, URL proxyURL) {
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
 
+        // If defined, add BASIC Authentication parameters
         if (isNotEmpty(smsUsr) && isNotEmpty(smsPwd)) {
             credsProvider.setCredentials(
                     new AuthScope(smsURL.getHost(), smsURL.getPort()),
@@ -333,6 +336,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
         }
 
+        // If defined, add Proxy Authentication parameters
         if (isNotEmpty(proxyUsr) && isNotEmpty(proxyPwd)) {
             credsProvider.setCredentials(
                     new AuthScope(proxyURL.getHost(), proxyURL.getPort()),
