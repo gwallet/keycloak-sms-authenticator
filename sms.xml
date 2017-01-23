@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <MESSAGES>
  
-  <USER LOGIN="NJWKoele" PASSWORD="NjiKt12JW!" />
+  <USER LOGIN="username" PASSWORD="password" />
   <MSG>
     <FROM>Alliander</FROM>
-    <TO>0031618167266</TO>
+    <TO>phonenumber</TO>
     <BODY TYPE="text">Dit is een test</BODY>
   </MSG>
 </MESSAGES>
