@@ -1,13 +1,13 @@
 {
     "messages": {
         "user" : {
-        	"login": "NJWKoele",
-        	"password": "NjiKt12JW!"
+        	"login": "username",
+        	"password": "password"
         },
         "msg": [ {
                 "from": "Alliander",
                 "to": [{
-                    "number": "0031618167266"
+                    "number": "phonenumber"
                 }],
                 "body": {
                     "content": "Test message"
