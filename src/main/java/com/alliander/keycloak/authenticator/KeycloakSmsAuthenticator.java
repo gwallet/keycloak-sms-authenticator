@@ -154,9 +154,9 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         logger.debug("validateCode called ... ");
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         String enteredCode = formData.getFirst(SMSAuthenticatorConstants.ANSW_SMS_CODE);
-
-        String expectedCode = SMSAuthenticatorUtil.getCredentialValue(context.getUser(), SMSAuthenticatorConstants.USR_CRED_MDL_SMS_CODE);
-        String expTimeString = SMSAuthenticatorUtil.getCredentialValue(context.getUser(), SMSAuthenticatorConstants.USR_CRED_MDL_SMS_EXP_TIME);
+        KeycloakSession session = context.getSession();
+        String expectedCode = session.getAttribute(SMSAuthenticatorConstants.USR_CRED_MDL_SMS_CODE).toString();
+        String expTimeString = session.getAttribute(SMSAuthenticatorConstants.USR_CRED_MDL_SMS_EXP_TIME).toString();
 
         logger.debug("Expected code = " + expectedCode + "    entered code = " + enteredCode);
 

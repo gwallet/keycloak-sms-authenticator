@@ -2,7 +2,6 @@ package com.alliander.keycloak.authenticator;
 
 import org.jboss.logging.Logger;
 import org.keycloak.models.AuthenticatorConfigModel;
-import org.keycloak.models.UserCredentialValueModel;
 import org.keycloak.models.UserModel;
 
 import java.util.List;
@@ -19,19 +18,6 @@ public class SMSAuthenticatorUtil {
         List<String> values = user.getAttribute(attributeName);
         if (values != null && values.size() > 0) {
             result = values.get(0);
-        }
-
-        return result;
-    }
-
-
-    public static String getCredentialValue(UserModel user, String credentialName) {
-        String result = null;
-        List<UserCredentialValueModel> creds = user.getCredentialsDirectly();
-        for (UserCredentialValueModel cred : creds) {
-            if (cred.getType().equals(credentialName)) {
-                result = cred.getValue();
-            }
         }
 
         return result;
