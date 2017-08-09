@@ -51,5 +51,10 @@
             <version>4.5</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sns</artifactId>
+            <version>1.11.172</version>
+        </dependency>
     </dependencies>
 </project>

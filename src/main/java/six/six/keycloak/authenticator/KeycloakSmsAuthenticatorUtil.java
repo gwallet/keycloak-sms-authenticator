@@ -1,4 +1,4 @@
-package com.alliander.keycloak.authenticator;
+package six.six.keycloak.authenticator;
 
 import org.jboss.logging.Logger;
 import org.keycloak.models.AuthenticatorConfigModel;

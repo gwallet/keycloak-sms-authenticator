@@ -1,4 +1,4 @@
-package com.alliander.keycloak.authenticator;
+package six.six.keycloak.authenticator;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;

@@ -1,4 +1,4 @@
-package com.alliander.keycloak.authenticator;
+package six.six.keycloak.authenticator;
 
 /**
  * Created by joris on 18/11/2016.

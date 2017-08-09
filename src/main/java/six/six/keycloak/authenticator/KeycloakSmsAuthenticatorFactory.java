@@ -1,4 +1,4 @@
-package com.alliander.keycloak.authenticator;
+package six.six.keycloak.authenticator;
 
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
@@ -13,9 +13,6 @@ import org.keycloak.provider.ProviderConfigProperty;
 import javax.ws.rs.HttpMethod;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.alliander.keycloak.authenticator.KeycloakSmsAuthenticatorConstants.AUTH_METHOD_BASIC;
-import static com.alliander.keycloak.authenticator.KeycloakSmsAuthenticatorConstants.AUTH_METHOD_INMESSAGE;
 
 
 /**
@@ -106,8 +103,8 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         property.setLabel("Authentication method");
         property.setHelpText("");
         types = new ArrayList(2);
-        types.add(AUTH_METHOD_BASIC);
-        types.add(AUTH_METHOD_INMESSAGE);
+        types.add(KeycloakSmsAuthenticatorConstants.AUTH_METHOD_BASIC);
+        types.add(KeycloakSmsAuthenticatorConstants.AUTH_METHOD_INMESSAGE);
         property.setType(ProviderConfigProperty.LIST_TYPE);
         property.setOptions(types);
         configProperties.add(property);
