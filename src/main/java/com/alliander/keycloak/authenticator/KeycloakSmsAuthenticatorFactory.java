@@ -127,8 +127,6 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         configProperties.add(property);
 
 
-
-
         // HTTP Proxy
         property = new ProviderConfigProperty();
         property.setName(SMSAuthenticatorContstants.CONF_PRP_PROXY_URL);

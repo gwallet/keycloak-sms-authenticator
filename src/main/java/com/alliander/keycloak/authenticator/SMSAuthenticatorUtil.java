@@ -17,7 +17,7 @@ public class SMSAuthenticatorUtil {
     public static String getAttributeValue(UserModel user, String attributeName) {
         String result = null;
         List<String> values = user.getAttribute(attributeName);
-        if(values != null && values.size() > 0) {
+        if (values != null && values.size() > 0) {
             result = values.get(0);
         }
 
@@ -29,7 +29,7 @@ public class SMSAuthenticatorUtil {
         String result = null;
         List<UserCredentialValueModel> creds = user.getCredentialsDirectly();
         for (UserCredentialValueModel cred : creds) {
-            if(cred.getType().equals(credentialName)) {
+            if (cred.getType().equals(credentialName)) {
                 result = cred.getValue();
             }
         }
