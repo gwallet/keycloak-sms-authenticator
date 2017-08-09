@@ -57,9 +57,9 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
 
         String mobileNumberAttribute = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_USR_ATTR_MOBILE);
-        if(mobileNumberAttribute == null) {
+        if (mobileNumberAttribute == null) {
             logger.error("Mobile number attribute is not configured for the SMS Authenticator.");
-            Response challenge =  context.form()
+            Response challenge = context.form()
                     .setError("Mobile number can not be determined.")
                     .createForm("sms-validation-error.ftl");
             context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge);
@@ -67,10 +67,8 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         }
 
         String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), mobileNumberAttribute);
-        if(mobileNumber != null) {
+        if (mobileNumber != null) {
             // The mobile number is configured --> send an SMS
-
-
             long nrOfDigits = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorContstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
             logger.debug("Using nrOfDigits " + nrOfDigits);
 
@@ -86,19 +84,17 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 Response challenge = context.form().createForm("sms-validation.ftl");
                 context.challenge(challenge);
             } else {
-                Response challenge =  context.form()
+                Response challenge = context.form()
                         .setError("SMS could not be sent.")
                         .createForm("sms-validation-error.ftl");
                 context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge);
-                return;
             }
         } else {
             // The mobile number is NOT configured --> complain
-            Response challenge =  context.form()
+            Response challenge = context.form()
                     .setError("Missing mobile number")
                     .createForm("sms-validation-error.ftl");
             context.failureChallenge(AuthenticationFlowError.CLIENT_CREDENTIALS_SETUP_REQUIRED, challenge);
-            return;
         }
     }
 
@@ -109,19 +105,19 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         Response challenge = null;
         switch (status) {
             case EXPIRED:
-                challenge =  context.form()
+                challenge = context.form()
                         .setError("code is expired")
                         .createForm("sms-validation.ftl");
                 context.failureChallenge(AuthenticationFlowError.EXPIRED_CODE, challenge);
                 break;
 
             case INVALID:
-                if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
+                if (context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.OPTIONAL ||
                         context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.ALTERNATIVE) {
                     logger.debug("Calling context.attempted()");
                     context.attempted();
-                } else if(context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
-                    challenge =  context.form()
+                } else if (context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
+                    challenge = context.form()
                             .setError("badCode")
                             .createForm("sms-validation.ftl");
                     context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
@@ -144,11 +140,11 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         UserCredentialModel credentials = new UserCredentialModel();
         credentials.setType(SMSAuthenticatorContstants.USR_CRED_MDL_SMS_CODE);
         credentials.setValue(code);
-        context.getSession().users().updateCredential(context.getRealm(), context.getUser(), credentials);
+        context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), credentials);
 
         credentials.setType(SMSAuthenticatorContstants.USR_CRED_MDL_SMS_EXP_TIME);
         credentials.setValue((expiringAt).toString());
-        context.getSession().users().updateCredential(context.getRealm(), context.getUser(), credentials);
+        context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), credentials);
     }
 
 
@@ -164,12 +160,12 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
         logger.debug("Expected code = " + expectedCode + "    entered code = " + enteredCode);
 
-        if(expectedCode != null) {
+        if (expectedCode != null) {
             result = enteredCode.equals(expectedCode) ? CODE_STATUS.VALID : CODE_STATUS.INVALID;
             long now = new Date().getTime();
 
             logger.debug("Valid code expires in " + (Long.parseLong(expTimeString) - now) + " ms");
-            if(result == CODE_STATUS.VALID) {
+            if (result == CODE_STATUS.VALID) {
                 if (Long.parseLong(expTimeString) < now) {
                     logger.debug("Code is expired !!");
                     result = CODE_STATUS.EXPIRED;
@@ -188,7 +184,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         logger.debug("configuredFor called ... session=" + session + ", realm=" + realm + ", user=" + user);
         boolean result = true;
-        logger.debug("... returning "  +result);
+        logger.debug("... returning " + result);
         return result;
     }
 
@@ -202,13 +198,13 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
 
     private String getSmsCode(long nrOfDigits) {
-        if(nrOfDigits < 1) {
+        if (nrOfDigits < 1) {
             throw new RuntimeException("Nr of digits must be bigger than 0");
         }
 
         double maxValue = Math.pow(10.0, nrOfDigits); // 10 ^ nrOfDigits;
         Random r = new Random();
-        long code = (long)(r.nextFloat() * maxValue);
+        long code = (long) (r.nextFloat() * maxValue);
         return Long.toString(code);
     }
 
@@ -230,14 +226,14 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             URL smsURL = (smsUrl != null && smsUrl.length() > 0) ? new URL(smsUrl) : null;
             URL proxyURL = (proxyUrl != null && proxyUrl.length() > 0) ? new URL(proxyUrl) : null;
 
-            if(smsURL == null) {
+            if (smsURL == null) {
                 logger.error("SMS gateway URL is not configured.");
                 return false;
             }
 
 
             CredentialsProvider credsProvider;
-            if(SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorContstants.AUTH_METHOD_INMESSAGE)) {
+            if (SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorContstants.AUTH_METHOD_INMESSAGE)) {
                 credsProvider = getCredentialsProvider(null, null, proxyUsr, proxyPwd, smsURL, proxyURL);
             } else {
                 credsProvider = getCredentialsProvider(smsUsr, smsPwd, proxyUsr, proxyPwd, smsURL, proxyURL);
@@ -251,19 +247,19 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     .build();
 
             RequestConfig requestConfig;
-                requestConfig = RequestConfig.custom()
-                        .setProxy(proxy)
-                        .build();
+            requestConfig = RequestConfig.custom()
+                    .setProxy(proxy)
+                    .build();
 
             String httpMethod = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_METHOD);
             String smsText = createMessage(code, mobileNumber, config);
-            if(httpMethod.equals(HttpMethod.GET)) {
+            if (httpMethod.equals(HttpMethod.GET)) {
 
                 String path = getPath(mobileNumber, smsURL, smsText);
 
                 HttpGet httpGet = new HttpGet(path);
                 httpGet.setConfig(requestConfig);
-                if(isNotEmpty(contentType)) {
+                if (isNotEmpty(contentType)) {
                     httpGet.addHeader("Content-type", contentType);
                 }
 
@@ -272,8 +268,8 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 CloseableHttpResponse response = httpClient.execute(target, httpGet);
                 StatusLine sl = response.getStatusLine();
                 response.close();
-                if(sl.getStatusCode() != 200) {
-                    logger.error("SMS code for " + mobileNumber + " could not be sent: " + sl.getStatusCode() +  " - " + sl.getReasonPhrase());
+                if (sl.getStatusCode() != 200) {
+                    logger.error("SMS code for " + mobileNumber + " could not be sent: " + sl.getStatusCode() + " - " + sl.getReasonPhrase());
                 }
                 return sl.getStatusCode() == 200;
 
@@ -284,7 +280,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
                 HttpPost httpPost = new HttpPost(uri);
                 httpPost.setConfig(requestConfig);
-                if(isNotEmpty(contentType)) {
+                if (isNotEmpty(contentType)) {
                     httpPost.addHeader("Content-type", contentType);
                 }
 
@@ -294,8 +290,8 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 CloseableHttpResponse response = httpClient.execute(httpPost);
                 StatusLine sl = response.getStatusLine();
                 response.close();
-                if(sl.getStatusCode() != 200) {
-                    logger.error("SMS code for " + mobileNumber + " could not be sent: " + sl.getStatusCode() +  " - " + sl.getReasonPhrase());
+                if (sl.getStatusCode() != 200) {
+                    logger.error("SMS code for " + mobileNumber + " could not be sent: " + sl.getStatusCode() + " - " + sl.getReasonPhrase());
                 }
                 return sl.getStatusCode() == 200;
             }
@@ -304,10 +300,10 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             logger.error(e);
             return false;
         } finally {
-            if(httpClient != null) {
+            if (httpClient != null) {
                 try {
                     httpClient.close();
-                } catch(IOException ignore) {
+                } catch (IOException ignore) {
                     // Ignore ...
                 }
             }
@@ -317,7 +313,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     private String getPath(String mobileNumber, URL smsURL, String smsText) throws UnsupportedEncodingException {
         String path = smsURL.getPath();
-        if(smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
+        if (smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
             path += smsURL.getQuery();
         }
         path = path.replaceFirst("\\{message\\}", URLEncoder.encode(smsText, "UTF-8"));
@@ -351,7 +347,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         text = text.replaceAll("%sms-code%", code);
         text = text.replaceAll("%phonenumber%", mobileNumber);
 
-        if(SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorContstants.AUTH_METHOD_INMESSAGE)) {
+        if (SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorContstants.AUTH_METHOD_INMESSAGE)) {
             String smsUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_USERNAME);
             String smsPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorContstants.CONF_PRP_SMS_PASSWORD);
 
