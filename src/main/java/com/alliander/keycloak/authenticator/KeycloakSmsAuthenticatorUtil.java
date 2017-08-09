@@ -9,9 +9,9 @@ import java.util.List;
 /**
  * Created by joris on 18/11/2016.
  */
-public class SMSAuthenticatorUtil {
+public class KeycloakSmsAuthenticatorUtil {
 
-    private static Logger logger = Logger.getLogger(SMSAuthenticatorUtil.class);
+    private static Logger logger = Logger.getLogger(KeycloakSmsAuthenticatorUtil.class);
 
     public static String getAttributeValue(UserModel user, String attributeName) {
         String result = null;

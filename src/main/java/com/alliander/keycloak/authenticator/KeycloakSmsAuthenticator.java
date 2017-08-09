@@ -56,7 +56,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
 
-        String mobileNumberAttribute = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_USR_ATTR_MOBILE);
+        String mobileNumberAttribute = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_USR_ATTR_MOBILE);
         if (mobileNumberAttribute == null) {
             logger.error("Mobile number attribute is not configured for the SMS Authenticator.");
             Response challenge = context.form()
@@ -66,14 +66,14 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             return;
         }
 
-        String mobileNumber = SMSAuthenticatorUtil.getAttributeValue(context.getUser(), mobileNumberAttribute);
+        String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(context.getUser(), mobileNumberAttribute);
         if (mobileNumber != null) {
             // The mobile number is configured --> send an SMS
-            long nrOfDigits = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorConstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
+            long nrOfDigits = KeycloakSmsAuthenticatorUtil.getConfigLong(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
             logger.debug("Using nrOfDigits " + nrOfDigits);
 
 
-            long ttl = SMSAuthenticatorUtil.getConfigLong(config, SMSAuthenticatorConstants.CONF_PRP_SMS_CODE_TTL, 10 * 60L); // 10 minutes in s
+            long ttl = KeycloakSmsAuthenticatorUtil.getConfigLong(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CODE_TTL, 10 * 60L); // 10 minutes in s
 
             logger.debug("Using ttl " + ttl + " (s)");
 
@@ -138,11 +138,11 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     // When the code is validated on another node (in a clustered environment) the other nodes have access to it's values too.
     private void storeSMSCode(AuthenticationFlowContext context, String code, Long expiringAt) {
         UserCredentialModel credentials = new UserCredentialModel();
-        credentials.setType(SMSAuthenticatorConstants.USR_CRED_MDL_SMS_CODE);
+        credentials.setType(KeycloakSmsAuthenticatorConstants.USR_CRED_MDL_SMS_CODE);
         credentials.setValue(code);
         context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), credentials);
 
-        credentials.setType(SMSAuthenticatorConstants.USR_CRED_MDL_SMS_EXP_TIME);
+        credentials.setType(KeycloakSmsAuthenticatorConstants.USR_CRED_MDL_SMS_EXP_TIME);
         credentials.setValue((expiringAt).toString());
         context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), credentials);
     }
@@ -153,10 +153,10 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
         logger.debug("validateCode called ... ");
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
-        String enteredCode = formData.getFirst(SMSAuthenticatorConstants.ANSW_SMS_CODE);
+        String enteredCode = formData.getFirst(KeycloakSmsAuthenticatorConstants.ANSW_SMS_CODE);
         KeycloakSession session = context.getSession();
-        String expectedCode = session.getAttribute(SMSAuthenticatorConstants.USR_CRED_MDL_SMS_CODE).toString();
-        String expTimeString = session.getAttribute(SMSAuthenticatorConstants.USR_CRED_MDL_SMS_EXP_TIME).toString();
+        String expectedCode = session.getAttribute(KeycloakSmsAuthenticatorConstants.USR_CRED_MDL_SMS_CODE).toString();
+        String expTimeString = session.getAttribute(KeycloakSmsAuthenticatorConstants.USR_CRED_MDL_SMS_EXP_TIME).toString();
 
         logger.debug("Expected code = " + expectedCode + "    entered code = " + enteredCode);
 
@@ -212,14 +212,14 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         // Send an SMS
         logger.debug("Sending " + code + "  to mobileNumber " + mobileNumber);
 
-        String smsUrl = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_URL);
-        String smsUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_USERNAME);
-        String smsPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_PASSWORD);
+        String smsUrl = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_URL);
+        String smsUsr = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_USERNAME);
+        String smsPwd = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_PASSWORD);
 
-        String proxyUrl = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_PROXY_URL);
-        String proxyUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_PROXY_USERNAME);
-        String proxyPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_PROXY_PASSWORD);
-        String contentType = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_CONTENT_TYPE);
+        String proxyUrl = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_PROXY_URL);
+        String proxyUsr = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_PROXY_USERNAME);
+        String proxyPwd = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_PROXY_PASSWORD);
+        String contentType = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_CONTENT_TYPE);
 
         CloseableHttpClient httpClient = null;
         try {
@@ -233,7 +233,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
 
             CredentialsProvider credsProvider;
-            if (SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorConstants.AUTH_METHOD_INMESSAGE)) {
+            if (KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_AUTHTYPE, "").equals(KeycloakSmsAuthenticatorConstants.AUTH_METHOD_INMESSAGE)) {
                 credsProvider = getCredentialsProvider(null, null, proxyUsr, proxyPwd, smsURL, proxyURL);
             } else {
                 credsProvider = getCredentialsProvider(smsUsr, smsPwd, proxyUsr, proxyPwd, smsURL, proxyURL);
@@ -251,7 +251,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     .setProxy(proxy)
                     .build();
 
-            String httpMethod = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_METHOD);
+            String httpMethod = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_METHOD);
             String smsText = createMessage(code, mobileNumber, config);
             if (httpMethod.equals(HttpMethod.GET)) {
 
@@ -343,13 +343,13 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     }
 
     private String createMessage(String code, String mobileNumber, AuthenticatorConfigModel config) {
-        String text = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_TEXT);
+        String text = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_TEXT);
         text = text.replaceAll("%sms-code%", code);
         text = text.replaceAll("%phonenumber%", mobileNumber);
 
-        if (SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_AUTHTYPE, "").equals(SMSAuthenticatorConstants.AUTH_METHOD_INMESSAGE)) {
-            String smsUsr = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_USERNAME);
-            String smsPwd = SMSAuthenticatorUtil.getConfigString(config, SMSAuthenticatorConstants.CONF_PRP_SMS_PASSWORD);
+        if (KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_AUTHTYPE, "").equals(KeycloakSmsAuthenticatorConstants.AUTH_METHOD_INMESSAGE)) {
+            String smsUsr = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_USERNAME);
+            String smsPwd = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_PASSWORD);
 
             text = text.replaceAll("%user%", smsUsr);
             text = text.replaceAll("%password%", smsPwd);

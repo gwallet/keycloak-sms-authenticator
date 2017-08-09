@@ -29,7 +29,7 @@ public class KeycloakSmsAuthenticatorRequiredAction  implements RequiredActionPr
     public void processAction(RequiredActionContext context) {
         String answer = (context.getHttpRequest().getDecodedFormParameters().getFirst("smsCode"));
         UserCredentialModel input = new UserCredentialModel();
-        input.setType(SMSAuthenticatorConstants.ANSW_SMS_CODE);
+        input.setType(KeycloakSmsAuthenticatorConstants.ANSW_SMS_CODE);
         input.setValue(answer);
         context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), input);
         context.success();
