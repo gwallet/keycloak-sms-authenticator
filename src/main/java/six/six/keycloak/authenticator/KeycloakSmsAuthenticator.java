@@ -212,14 +212,13 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         String smsPwd = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTSECRET);
 
         String smsText = createMessage(code, mobileNumber, config);
-        /*try {*/
-            PublishResult send_result = new SnsNotificationService().send(mobileNumber, smsText, smsUsr, smsPwd);
+        try {
+            PublishResult send_result = new SnsNotificationService().send(setDefaultCountryCodeIfZero(mobileNumber), smsText, smsUsr, smsPwd);
             return true;
-       /* } catch(Exception e) {
+       } catch(Exception e) {
             //Just like pokemon
             return false;
         }
-*/
     }
 
 
@@ -264,6 +263,14 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     private boolean isNotEmpty(String s) {
         return (s != null && s.length() > 0);
+    }
+
+    public String setDefaultCountryCodeIfZero(String mobileNumber) {
+        if (mobileNumber.startsWith("07")) {
+            mobileNumber = "+44" + mobileNumber.substring(1);
+        }
+
+        return mobileNumber;
     }
 
 }
