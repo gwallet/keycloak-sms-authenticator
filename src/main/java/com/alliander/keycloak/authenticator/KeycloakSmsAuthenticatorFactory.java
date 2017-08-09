@@ -79,7 +79,7 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         methods.add(HttpMethod.GET);
         methods.add(HttpMethod.POST);
         property.setType(ProviderConfigProperty.LIST_TYPE);
-        property.setDefaultValue(methods);
+        property.setOptions(methods);
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
@@ -97,7 +97,7 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         types.add("application/json");
         types.add("application/xml");
         property.setType(ProviderConfigProperty.LIST_TYPE);
-        property.setDefaultValue(types);
+        property.setOptions(types);
         configProperties.add(property);
 
         // SMS Authentication
@@ -109,7 +109,7 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         types.add(AUTH_METHOD_BASIC);
         types.add(AUTH_METHOD_INMESSAGE);
         property.setType(ProviderConfigProperty.LIST_TYPE);
-        property.setDefaultValue(types);
+        property.setOptions(types);
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
