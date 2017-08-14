@@ -1,6 +1,5 @@
 package six.six.keycloak.authenticator;
 
-import com.amazonaws.services.sns.model.PublishResult;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -16,15 +15,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserModel;
-import six.six.aws.snsclient.SnsNotificationService;
+
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Created by joris on 11/11/2016.
@@ -68,10 +64,10 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
             logger.debug("Using ttl " + ttl + " (s)");
 
-            String code = getSmsCode(nrOfDigits);
+            String code = KeycloakSmsAuthenticatorUtil.getSmsCode(nrOfDigits);
 
             storeSMSCode(context, code, new Date().getTime() + (ttl * 1000)); // s --> ms
-            if (sendSmsCode(mobileNumber, code, context.getAuthenticatorConfig())) {
+            if (KeycloakSmsAuthenticatorUtil.sendSmsCode(mobileNumber, code, context.getAuthenticatorConfig())) {
                 Response challenge = context.form().createForm("sms-validation.ftl");
                 context.challenge(challenge);
             } else {
@@ -179,9 +175,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
         logger.debug("configuredFor called ... session=" + session + ", realm=" + realm + ", user=" + user);
-        boolean result = true;
-        logger.debug("... returning " + result);
-        return result;
+        return true;
     }
 
     public void setRequiredActions(KeycloakSession session, RealmModel realm, UserModel user) {
@@ -193,50 +187,11 @@ public class KeycloakSmsAuthenticator implements Authenticator {
     }
 
 
-    private String getSmsCode(long nrOfDigits) {
-        if (nrOfDigits < 1) {
-            throw new RuntimeException("Nr of digits must be bigger than 0");
-        }
-
-        double maxValue = Math.pow(10.0, nrOfDigits); // 10 ^ nrOfDigits;
-        Random r = new Random();
-        long code = (long) (r.nextFloat() * maxValue);
-        return Long.toString(code);
-    }
-
-    private boolean sendSmsCode(String mobileNumber, String code, AuthenticatorConfigModel config) {
-        // Send an SMS
-        logger.debug("Sending " + code + "  to mobileNumber " + mobileNumber);
-
-        String smsUsr = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTTOKEN);
-        String smsPwd = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTSECRET);
-
-        String smsText = createMessage(code, mobileNumber, config);
-        try {
-            PublishResult send_result = new SnsNotificationService().send(setDefaultCountryCodeIfZero(mobileNumber), smsText, smsUsr, smsPwd);
-            return true;
-       } catch(Exception e) {
-            //Just like pokemon
-            return false;
-        }
-    }
-
-
-    private String getPath(String mobileNumber, URL smsURL, String smsText) throws UnsupportedEncodingException {
-        String path = smsURL.getPath();
-        if (smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
-            path += smsURL.getQuery();
-        }
-        path = path.replaceFirst("\\{message\\}", URLEncoder.encode(smsText, "UTF-8"));
-        path = path.replaceFirst("\\{phonenumber\\}", URLEncoder.encode(mobileNumber, "UTF-8"));
-        return path;
-    }
-
     private CredentialsProvider getCredentialsProvider(String smsUsr, String smsPwd, String proxyUsr, String proxyPwd, URL smsURL, URL proxyURL) {
         CredentialsProvider credsProvider = new BasicCredentialsProvider();
 
         // If defined, add BASIC Authentication parameters
-        if (isNotEmpty(smsUsr) && isNotEmpty(smsPwd)) {
+        if (KeycloakSmsAuthenticatorUtil.isNotEmpty(smsUsr) && KeycloakSmsAuthenticatorUtil.isNotEmpty(smsPwd)) {
             credsProvider.setCredentials(
                     new AuthScope(smsURL.getHost(), smsURL.getPort()),
                     new UsernamePasswordCredentials(smsUsr, smsPwd));
@@ -244,33 +199,13 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         }
 
         // If defined, add Proxy Authentication parameters
-        if (isNotEmpty(proxyUsr) && isNotEmpty(proxyPwd)) {
+        if (KeycloakSmsAuthenticatorUtil.isNotEmpty(proxyUsr) && KeycloakSmsAuthenticatorUtil.isNotEmpty(proxyPwd)) {
             credsProvider.setCredentials(
                     new AuthScope(proxyURL.getHost(), proxyURL.getPort()),
                     new UsernamePasswordCredentials(proxyUsr, proxyPwd));
 
         }
         return credsProvider;
-    }
-
-    private String createMessage(String code, String mobileNumber, AuthenticatorConfigModel config) {
-        String text = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_TEXT);
-        text = text.replaceAll("%sms-code%", code);
-        text = text.replaceAll("%phonenumber%", mobileNumber);
-
-        return text;
-    }
-
-    private boolean isNotEmpty(String s) {
-        return (s != null && s.length() > 0);
-    }
-
-    public String setDefaultCountryCodeIfZero(String mobileNumber) {
-        if (mobileNumber.startsWith("07")) {
-            mobileNumber = "+44" + mobileNumber.substring(1);
-        }
-
-        return mobileNumber;
     }
 
 }
