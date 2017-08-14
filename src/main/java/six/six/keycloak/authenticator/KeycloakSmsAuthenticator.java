@@ -198,13 +198,6 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
         }
 
-        // If defined, add Proxy Authentication parameters
-        if (KeycloakSmsAuthenticatorUtil.isNotEmpty(proxyUsr) && KeycloakSmsAuthenticatorUtil.isNotEmpty(proxyPwd)) {
-            credsProvider.setCredentials(
-                    new AuthScope(proxyURL.getHost(), proxyURL.getPort()),
-                    new UsernamePasswordCredentials(proxyUsr, proxyPwd));
-
-        }
         return credsProvider;
     }
 
