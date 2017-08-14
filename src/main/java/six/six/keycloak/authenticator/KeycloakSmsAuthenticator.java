@@ -31,7 +31,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     public static final String CREDENTIAL_TYPE = "sms_validation";
 
-    private static enum CODE_STATUS {
+    private enum CODE_STATUS {
         VALID,
         INVALID,
         EXPIRED
