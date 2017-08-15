@@ -10,7 +10,7 @@ import org.keycloak.models.KeycloakSession;
 public class KeycloakSmsMobilenumberCredentialProviderFactory implements CredentialProviderFactory<KeycloakSmsMobilenumberCredentialProvider> {
     @Override
     public String getId() {
-        return "secret-question";
+        return "mobile_number";
     }
 
     @Override
