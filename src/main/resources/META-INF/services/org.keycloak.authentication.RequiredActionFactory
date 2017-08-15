@@ -1,1 +1,1 @@
-six.six.keycloak.authenticator.KeycloakSmsAuthenticatorRequiredActionFactory
+six.six.keycloak.requiredaction.KeycloakSmsMobilenumberRequiredActionFactory
