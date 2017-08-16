@@ -39,8 +39,12 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
 
         List mobileNumberCreds = context.getSession().userCredentialManager().getStoredCredentialsByType(context.getRealm(), context.getUser(), KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
-        CredentialModel mobileNumberCred = (CredentialModel) mobileNumberCreds.get(0);
-        String mobileNumber = mobileNumberCred.getValue();
+        String mobileNumber = null;
+
+        if (!mobileNumberCreds.isEmpty()) {
+            CredentialModel mobileNumberCred = (CredentialModel) mobileNumberCreds.get(0);
+            mobileNumber = mobileNumberCred.getValue();
+        }
 
         //String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(user, KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
         if (mobileNumber != null) {
