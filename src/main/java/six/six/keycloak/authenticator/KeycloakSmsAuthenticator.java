@@ -40,20 +40,10 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     public void authenticate(AuthenticationFlowContext context) {
         logger.debug("authenticate called ... context = " + context);
-
+        UserModel user = context.getUser();
         AuthenticatorConfigModel config = context.getAuthenticatorConfig();
 
-        String mobileNumberAttribute = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_USR_ATTR_MOBILE);
-        if (mobileNumberAttribute == null) {
-            logger.error("Mobile number attribute is not configured for the SMS Authenticator.");
-            Response challenge = context.form()
-                    .setError("Mobile number can not be determined.")
-                    .createForm("sms-validation-error.ftl");
-            context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge);
-            return;
-        }
-
-        String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(context.getUser(), mobileNumberAttribute);
+        String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(user, KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
         if (mobileNumber != null) {
             // The mobile number is configured --> send an SMS
             long nrOfDigits = KeycloakSmsAuthenticatorUtil.getConfigLong(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
@@ -184,21 +174,6 @@ public class KeycloakSmsAuthenticator implements Authenticator {
 
     public void close() {
         logger.debug("close called ...");
-    }
-
-
-    private CredentialsProvider getCredentialsProvider(String smsUsr, String smsPwd, String proxyUsr, String proxyPwd, URL smsURL, URL proxyURL) {
-        CredentialsProvider credsProvider = new BasicCredentialsProvider();
-
-        // If defined, add BASIC Authentication parameters
-        if (KeycloakSmsAuthenticatorUtil.isNotEmpty(smsUsr) && KeycloakSmsAuthenticatorUtil.isNotEmpty(smsPwd)) {
-            credsProvider.setCredentials(
-                    new AuthScope(smsURL.getHost(), smsURL.getPort()),
-                    new UsernamePasswordCredentials(smsUsr, smsPwd));
-
-        }
-
-        return credsProvider;
     }
 
 }
