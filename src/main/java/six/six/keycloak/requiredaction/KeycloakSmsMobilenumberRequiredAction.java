@@ -46,7 +46,7 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
         String answer2 = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number_confirm"));
         if (answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer)) {
             UserCredentialModel input = new UserCredentialModel();
-            input.setType(KeycloakSmsAuthenticatorConstants.ANSW_SMS_CODE);
+            input.setType(KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
             input.setValue(answer);
             context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), input);
             context.success();
