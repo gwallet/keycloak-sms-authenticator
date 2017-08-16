@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>six.six</groupId>
-    <artifactId>keycloak-sms-authenticator</artifactId>
-    <version>1.1.0</version>
+    <artifactId>keycloak-sms-authenticator-sns</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
 
     <properties>
