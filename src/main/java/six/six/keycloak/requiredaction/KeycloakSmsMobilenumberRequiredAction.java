@@ -29,7 +29,7 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
         UserModel user = context.getUser();
         String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(user, KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
 
-        if(mobileNumber != null && validateTelephoneNumber(mobileNumber)) {
+        if (mobileNumber != null && validateTelephoneNumber(mobileNumber)) {
             // Mobile number is configured
             context.ignore();
         } else {
@@ -44,7 +44,7 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
 
         String answer = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number"));
         String answer2 = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number_confirm"));
-        if(answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer)) {
+        if (answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer)) {
             UserCredentialModel input = new UserCredentialModel();
             input.setType(KeycloakSmsAuthenticatorConstants.ANSW_SMS_CODE);
             input.setValue(answer);

@@ -98,9 +98,8 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
     }
 
     public boolean isConfigurable() {
-        boolean result = true;
-        logger.debug("isConfigurable called ... returning " + result);
-        return result;
+        logger.debug("isConfigurable called ... returning true");
+        return true;
     }
 
     public String getHelpText() {

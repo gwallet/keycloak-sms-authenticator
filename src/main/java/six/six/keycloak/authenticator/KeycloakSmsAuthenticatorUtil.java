@@ -74,10 +74,6 @@ public class KeycloakSmsAuthenticatorUtil {
         return text;
     }
 
-    public static boolean isNotEmpty(String s) {
-        return (s != null && s.length() > 0);
-    }
-
     public static String setDefaultCountryCodeIfZero(String mobileNumber) {
         if (mobileNumber.startsWith("07")) {
             mobileNumber = "+44" + mobileNumber.substring(1);
@@ -101,16 +97,6 @@ public class KeycloakSmsAuthenticatorUtil {
             //Just like pokemon
             return false;
         }
-    }
-
-    private static String getPath(String mobileNumber, URL smsURL, String smsText) throws UnsupportedEncodingException {
-        String path = smsURL.getPath();
-        if (smsURL.getQuery() != null && smsURL.getQuery().length() > 0) {
-            path += smsURL.getQuery();
-        }
-        path = path.replaceFirst("\\{message\\}", URLEncoder.encode(smsText, "UTF-8"));
-        path = path.replaceFirst("\\{phonenumber\\}", URLEncoder.encode(mobileNumber, "UTF-8"));
-        return path;
     }
 
     static String getSmsCode(long nrOfDigits) {
