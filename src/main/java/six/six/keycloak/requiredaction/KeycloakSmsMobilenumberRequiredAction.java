@@ -10,6 +10,8 @@ import six.six.keycloak.authenticator.KeycloakSmsAuthenticatorUtil;
 
 import javax.ws.rs.core.Response;
 
+import static six.six.keycloak.authenticator.KeycloakSmsAuthenticatorUtil.validateTelephoneNumber;
+
 /**
  * Created by nickpack on 15/08/2017.
  */
@@ -27,11 +29,11 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
         UserModel user = context.getUser();
         String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(user, KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
 
-        if(mobileNumber != null) {
+        if(mobileNumber != null && validateTelephoneNumber(mobileNumber)) {
             // Mobile number is configured
             context.ignore();
         } else {
-            // Mobile number is not configured
+            // Mobile number is not configured or is invalid
             Response challenge = context.form().createForm("sms-validation-mobile-number.ftl");
             context.challenge(challenge);
         }
@@ -41,7 +43,8 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
         logger.debug("processAction called ...");
 
         String answer = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number"));
-        if(answer != null && answer.length() > 0) {
+        String answer2 = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number_confirm"));
+        if(answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer)) {
             UserCredentialModel input = new UserCredentialModel();
             input.setType(KeycloakSmsAuthenticatorConstants.ANSW_SMS_CODE);
             input.setValue(answer);
