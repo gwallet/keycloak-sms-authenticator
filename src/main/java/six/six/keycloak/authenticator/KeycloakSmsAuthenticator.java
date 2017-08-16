@@ -46,7 +46,6 @@ public class KeycloakSmsAuthenticator implements Authenticator {
             mobileNumber = mobileNumberCred.getValue();
         }
 
-        //String mobileNumber = KeycloakSmsAuthenticatorUtil.getAttributeValue(user, KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
         if (mobileNumber != null) {
             // The mobile number is configured --> send an SMS
             long nrOfDigits = KeycloakSmsAuthenticatorUtil.getConfigLong(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CODE_LENGTH, 8L);
@@ -98,7 +97,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     context.attempted();
                 } else if (context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
                     challenge = context.form()
-                            .setError((String) context.getSession().getAttribute(KeycloakSmsAuthenticatorConstants.USR_CRED_MDL_SMS_CODE))
+                            .setError("Invalid code specified, please enter it again")
                             .createForm("sms-validation.ftl");
                     context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
                 } else {

@@ -45,13 +45,24 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
         String answer = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number"));
         String answer2 = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number_confirm"));
         if (answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer)) {
+            logger.debug("Valid matching mobile numbers supplied, save credential ...");
             UserCredentialModel input = new UserCredentialModel();
             input.setType(KeycloakSmsAuthenticatorConstants.ATTR_MOBILE);
             input.setValue(answer);
             context.getSession().userCredentialManager().updateCredential(context.getRealm(), context.getUser(), input);
             context.success();
+        } else if (answer != null && answer2 !=null && !answer.equals(answer2)) {
+            logger.debug("Supplied mobile number values do not match...");
+            Response challenge = context.form()
+                    .setError("Entered mobile numbers do not match.")
+                    .createForm("sms-validation-mobile-number.ftl");
+            context.challenge(challenge);
         } else {
-            context.failure();
+            logger.debug("Either one of two fields wasnt complete, or the first contains an invalid number...");
+            Response challenge = context.form()
+                    .setError("Please enter a valid UK telephone number.")
+                    .createForm("sms-validation-mobile-number.ftl");
+            context.challenge(challenge);
         }
     }
 
