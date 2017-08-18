@@ -8,7 +8,7 @@
         <form id="kc-totp-login-form" class="${properties.kcFormClass!}" action="${url.loginAction}" method="post">
             <div class="${properties.kcFormGroupClass!}">
                 <div class="${properties.kcLabelWrapperClass!}">
-                    <label for="totp" class="${properties.kcLabelClass!}">Enter SMS code</label>
+                    <label for="totp" class="${properties.kcLabelClass!}">Enter the code we sent to your device</label>
                 </div>
 
                 <div class="${properties.kcInputWrapperClass!}">
