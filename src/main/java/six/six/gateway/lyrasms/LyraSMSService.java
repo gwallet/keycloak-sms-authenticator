@@ -1,5 +1,6 @@
 package six.six.gateway.lyrasms;
 
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -12,6 +13,9 @@ import java.util.Optional;
  * LyraSMS Service implementation
  */
 public class LyraSMSService implements SMSService {
+
+    private static Logger logger = Logger.getLogger(LyraSMSService.class);
+
 
     final private static String OPTION = "01100";
     final private static String ACTION = "add";
@@ -60,6 +64,10 @@ public class LyraSMSService implements SMSService {
 
         String resultM = this.remoteService.send(login, pw, phoneNumber, message, OPTION,DEADLINE,null,ACTION,FORWARD,null,null);
         result = resultM.indexOf("status=0") > -1;
+
+        if (!result) {
+            logger.error("Fail to send SMS by LyraSMS: " + resultM );
+        }
         return result;
     }
 }

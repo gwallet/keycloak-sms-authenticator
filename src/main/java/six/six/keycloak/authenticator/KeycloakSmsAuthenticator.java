@@ -65,14 +65,14 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                 context.challenge(challenge);
             } else {
                 Response challenge = context.form()
-                        .setError("SMS could not be sent.")
+                        .setError("sms-auth.not.send")
                         .createForm("sms-validation-error.ftl");
                 context.failureChallenge(AuthenticationFlowError.INTERNAL_ERROR, challenge);
             }
         } else {
             // The mobile number is NOT configured --> complain
             Response challenge = context.form()
-                    .setError("Missing mobile number")
+                    .setError("sms-auth.not.mobile")
                     .createForm("sms-validation-error.ftl");
             context.failureChallenge(AuthenticationFlowError.CLIENT_CREDENTIALS_SETUP_REQUIRED, challenge);
         }
@@ -86,7 +86,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
         switch (status) {
             case EXPIRED:
                 challenge = context.form()
-                        .setError("code is expired")
+                        .setError("sms-auth.code.expired")
                         .createForm("sms-validation.ftl");
                 context.failureChallenge(AuthenticationFlowError.EXPIRED_CODE, challenge);
                 break;
@@ -98,7 +98,7 @@ public class KeycloakSmsAuthenticator implements Authenticator {
                     context.attempted();
                 } else if (context.getExecution().getRequirement() == AuthenticationExecutionModel.Requirement.REQUIRED) {
                     challenge = context.form()
-                            .setError("Invalid code specified, please enter it again")
+                            .setError("sms-auth.code.invalid")
                             .createForm("sms-validation.ftl");
                     context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challenge);
                 } else {

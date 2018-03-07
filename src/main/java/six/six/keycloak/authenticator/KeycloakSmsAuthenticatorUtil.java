@@ -11,6 +11,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.theme.Theme;
 import org.keycloak.theme.ThemeProvider;
 import six.six.gateway.Gateways;
+import six.six.gateway.SMSService;
 import six.six.gateway.aws.snsclient.SnsNotificationService;
 import six.six.gateway.lyrasms.LyraSMSService;
 import six.six.keycloak.EnvSubstitutor;
@@ -162,19 +163,21 @@ public class KeycloakSmsAuthenticatorUtil {
 
         String smsText = createMessage(template,code, mobileNumber);
         boolean result;
+        SMSService smsService;
         try {
             Gateways g=Gateways.valueOf(gateway);
             switch(g) {
                 case LYRA_SMS:
-                    result=new LyraSMSService(endpoint,isProxy).send(checkMobileNumber(setDefaultCountryCodeIfZero(mobileNumber, getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_DEFAULT), getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_CONDITION))), smsText, smsUsr, smsPwd);
+                    smsService=new LyraSMSService(endpoint,isProxy);
                     break;
                 default:
-                    result=new SnsNotificationService().send(checkMobileNumber(setDefaultCountryCodeIfZero(mobileNumber, getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_DEFAULT), getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_CONDITION))), smsText, smsUsr, smsPwd);
+                    smsService=new SnsNotificationService();
             }
 
+            result=smsService.send(checkMobileNumber(setDefaultCountryCodeIfZero(mobileNumber, getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_DEFAULT), getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_CONDITION))), smsText, smsUsr, smsPwd);
           return result;
        } catch(Exception e) {
-            //Just like pokemon
+            logger.error("Fail to send SMS " ,e );
             return false;
         }
     }
