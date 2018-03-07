@@ -9,13 +9,17 @@ import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.provider.ProviderConfigProperty;
+import six.six.gateway.Gateways;
+import six.six.keycloak.KeycloakSmsConstants;
 
-import javax.ws.rs.HttpMethod;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
+ * SMS validation Input
  * Created by joris on 11/11/2016.
  */
 public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, ConfigurableAuthenticatorFactory {
@@ -38,41 +42,61 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
 
         // SMS Code
         property = new ProviderConfigProperty();
-        property.setName(KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CODE_TTL);
+        property.setName(KeycloakSmsConstants.CONF_PRP_SMS_CODE_TTL);
         property.setLabel("SMS code time to live");
         property.setType(ProviderConfigProperty.STRING_TYPE);
         property.setHelpText("The validity of the sent code in seconds.");
+        property.setDefaultValue(60*5);
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
-        property.setName(KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CODE_LENGTH);
+        property.setName(KeycloakSmsConstants.CONF_PRP_SMS_CODE_LENGTH);
         property.setLabel("Length of the SMS code");
         property.setType(ProviderConfigProperty.STRING_TYPE);
         property.setHelpText("Length of the SMS code.");
+        property.setDefaultValue(6);
         configProperties.add(property);
 
-        // SMS Text
+        // SMS gateway
         property = new ProviderConfigProperty();
-        property.setName(KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_TEXT);
-        property.setLabel("Template of text to send to the user");
-        property.setType(ProviderConfigProperty.STRING_TYPE);
-        property.setHelpText("Use %sms-code% as placeholder for the generated SMS code. Use %user% and %password% as placeholder when 'In message' authentication is used.");
+        property.setName(KeycloakSmsConstants.CONF_PRP_SMS_GATEWAY);
+        property.setLabel("SMS gateway");
+        property.setHelpText("Select SMS gateway");
+        property.setType(ProviderConfigProperty.LIST_TYPE);
+        property.setDefaultValue(Gateways.AMAZON_SNS);
+        property.setOptions(Stream.of(Gateways.values())
+                .map(Enum::name)
+                .collect(Collectors.toList()));
         configProperties.add(property);
 
-        // SMS Gateway
-
+        // SMS Endpoint
         property = new ProviderConfigProperty();
-        property.setName(KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTTOKEN);
-        property.setLabel("AWS Client Token");
+        property.setName(KeycloakSmsConstants.CONF_PRP_SMS_GATEWAY_ENDPOINT);
+        property.setLabel("SMS endpoint");
         property.setType(ProviderConfigProperty.STRING_TYPE);
-        property.setHelpText("AWS Client Token.");
+        property.setHelpText("Not useful for AWS SNS.");
+        configProperties.add(property);
+
+        // Credential
+        property = new ProviderConfigProperty();
+        property.setName(KeycloakSmsConstants.CONF_PRP_SMS_CLIENTTOKEN);
+        property.setLabel("Client id");
+        property.setType(ProviderConfigProperty.STRING_TYPE);
+        property.setHelpText("AWS Client Token or LyraSMS User");
         configProperties.add(property);
 
         property = new ProviderConfigProperty();
-        property.setName(KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTSECRET);
-        property.setLabel("AWS Client Secret");
-        property.setHelpText("AWS Client Secret");
+        property.setName(KeycloakSmsConstants.CONF_PRP_SMS_CLIENTSECRET);
+        property.setLabel("Client secret");
+        property.setHelpText("AWS Client Secret or LyraSMS Password");
         property.setType(ProviderConfigProperty.STRING_TYPE);
+        configProperties.add(property);
+
+        property = new ProviderConfigProperty();
+        property.setName(KeycloakSmsConstants.PROXY_ENABLED);
+        property.setType(ProviderConfigProperty.BOOLEAN_TYPE);
+        property.setLabel("Use Proxy");
+        property.setHelpText("Add Java Properties: http(s).proxyHost,http(s).proxyPort");
         configProperties.add(property);
     }
 

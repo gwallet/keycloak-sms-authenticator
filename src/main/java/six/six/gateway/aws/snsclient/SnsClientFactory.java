@@ -1,5 +1,4 @@
-package six.six.aws.snsclient;
-
+package six.six.gateway.aws.snsclient;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;

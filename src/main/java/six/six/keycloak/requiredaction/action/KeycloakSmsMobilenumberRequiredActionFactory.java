@@ -1,4 +1,4 @@
-package six.six.keycloak.requiredaction;
+package six.six.keycloak.requiredaction.action;
 
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
@@ -8,6 +8,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 /**
+ * Mobile Number Input (RequireAction)
  * Created by nickpack on 15/08/2017.
  */
 public class KeycloakSmsMobilenumberRequiredActionFactory implements RequiredActionFactory {
