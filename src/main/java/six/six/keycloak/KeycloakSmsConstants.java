@@ -5,6 +5,8 @@ package six.six.keycloak;
  */
 public class KeycloakSmsConstants {
     public static final String ATTR_MOBILE = "mobile_number";
+    public static final String ATTR_MOBILE_VERIFIED = "mobile_number_verified";
+    public static final String VERIFY_MOBILENUMBER_KEY = "VERIFY_MOBILENUMBER_KEY";
     public static final String ANSW_SMS_CODE = "smsCode";
 
     public static final String CONF_PRP_SMS_CODE_TTL = "sms-auth.code.ttl";
@@ -37,4 +39,8 @@ public class KeycloakSmsConstants {
     public static final String PROXY_ENABLED = "proxy_enabled";
     public static final String PROXY_HOST= "proxyHost";
     public static final String PROXY_PORT= "proxyPort";
+
+    // Verification
+    public static final String MOBILE_VERIFICATION_ENABLED = "mobile_verification_enabled";
+    public static final String MOBILE_ASKFOR_ENABLED = "mobile_askfor_enabled";
 }

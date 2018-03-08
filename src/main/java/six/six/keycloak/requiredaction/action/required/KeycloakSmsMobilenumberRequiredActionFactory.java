@@ -1,4 +1,4 @@
-package six.six.keycloak.requiredaction.action;
+package six.six.keycloak.requiredaction.action.required;
 
 import org.jboss.logging.Logger;
 import org.keycloak.Config;
@@ -27,7 +27,7 @@ public class KeycloakSmsMobilenumberRequiredActionFactory implements RequiredAct
 
     public String getDisplayText() {
         logger.debug("getDisplayText called ...");
-        return "Mobile Number";
+        return "Update Mobile Number";
     }
 
     public void init(Config.Scope config) {

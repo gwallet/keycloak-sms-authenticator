@@ -6,6 +6,7 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.AuthenticationFlowContext;
+import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.theme.Theme;
@@ -134,6 +135,19 @@ public class KeycloakSmsAuthenticatorUtil {
 
 
     public static String getMessage(AuthenticationFlowContext context, String key){
+        String result=null;
+        try {
+            ThemeProvider themeProvider = context.getSession().getProvider(ThemeProvider.class, "extending");
+            Theme currentTheme = themeProvider.getTheme(context.getRealm().getLoginTheme(), Theme.Type.LOGIN);
+            Locale locale = context.getSession().getContext().resolveLocale(context.getUser());
+            result = currentTheme.getMessages(locale).getProperty(key);
+        }catch (IOException e){
+            logger.warn(key + "not found in messages");
+        }
+        return result;
+    }
+
+    public static String getMessage(RequiredActionContext context, String key){
         String result=null;
         try {
             ThemeProvider themeProvider = context.getSession().getProvider(ThemeProvider.class, "extending");

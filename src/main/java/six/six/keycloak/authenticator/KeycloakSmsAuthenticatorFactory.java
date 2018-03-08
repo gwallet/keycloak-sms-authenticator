@@ -92,12 +92,31 @@ public class KeycloakSmsAuthenticatorFactory implements AuthenticatorFactory, Co
         property.setType(ProviderConfigProperty.STRING_TYPE);
         configProperties.add(property);
 
+        // Proxy
         property = new ProviderConfigProperty();
         property.setName(KeycloakSmsConstants.PROXY_ENABLED);
         property.setType(ProviderConfigProperty.BOOLEAN_TYPE);
         property.setLabel("Use Proxy");
         property.setHelpText("Add Java Properties: http(s).proxyHost,http(s).proxyPort");
         configProperties.add(property);
+
+        //First time verification
+        property = new ProviderConfigProperty();
+        property.setName(KeycloakSmsConstants.MOBILE_VERIFICATION_ENABLED);
+        property.setType(ProviderConfigProperty.BOOLEAN_TYPE);
+        property.setLabel("Verify mobilephone\nnumber ONLY");
+        property.setHelpText("Send SMS code ONLY to verify mobile number (add or update)");
+        configProperties.add(property);
+
+        //Ask for mobile if not defined
+        property = new ProviderConfigProperty();
+        property.setName(KeycloakSmsConstants.MOBILE_ASKFOR_ENABLED);
+        property.setType(ProviderConfigProperty.BOOLEAN_TYPE);
+        property.setLabel("Ask for mobile number");
+        property.setHelpText("Enable access and ask for mobilenumber if it isn't defined");
+        configProperties.add(property);
+
+
     }
 
     public String getId() {

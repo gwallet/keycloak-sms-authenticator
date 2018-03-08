@@ -1,18 +1,15 @@
-package six.six.keycloak.requiredaction.action;
+package six.six.keycloak.requiredaction.action.required;
 
 import org.jboss.logging.Logger;
 import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.authentication.RequiredActionProvider;
 import org.keycloak.models.UserModel;
-import org.keycloak.theme.Theme;
-import org.keycloak.theme.ThemeProvider;
 import six.six.keycloak.KeycloakSmsConstants;
+import six.six.keycloak.authenticator.KeycloakSmsAuthenticatorUtil;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import static six.six.keycloak.authenticator.KeycloakSmsAuthenticatorUtil.validateTelephoneNumber;
 
@@ -27,18 +24,7 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
         logger.debug("evaluateTriggers called ...");
     }
 
-    public String getMessage(RequiredActionContext context,String key){
-        String result=null;
-        try {
-            ThemeProvider themeProvider = context.getSession().getProvider(ThemeProvider.class, "extending");
-            Theme currentTheme = themeProvider.getTheme(context.getRealm().getLoginTheme(), Theme.Type.LOGIN);
-            Locale locale = context.getSession().getContext().resolveLocale(context.getUser());
-            result = currentTheme.getMessages(locale).getProperty(key);
-        }catch (IOException e){
-            logger.warn(key + "not found in messages");
-        }
-        return result;
-    }
+
 
     public void requiredActionChallenge(RequiredActionContext context) {
         logger.debug("requiredActionChallenge called ...");
@@ -53,7 +39,7 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
             mobileNumber = mobileNumberCreds.get(0);
         }
 
-        if (mobileNumber != null && validateTelephoneNumber(mobileNumber,getMessage(context, KeycloakSmsConstants.MSG_MOBILE_REGEXP))) {
+        if (mobileNumber != null && validateTelephoneNumber(mobileNumber, KeycloakSmsAuthenticatorUtil.getMessage(context, KeycloakSmsConstants.MSG_MOBILE_REGEXP))) {
             // Mobile number is configured
             context.ignore();
         } else {
@@ -68,7 +54,7 @@ public class KeycloakSmsMobilenumberRequiredAction implements RequiredActionProv
 
         String answer = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number"));
         String answer2 = (context.getHttpRequest().getDecodedFormParameters().getFirst("mobile_number_confirm"));
-        if (answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer,getMessage(context, KeycloakSmsConstants.MSG_MOBILE_REGEXP))) {
+        if (answer != null && answer.length() > 0 && answer.equals(answer2) && validateTelephoneNumber(answer,KeycloakSmsAuthenticatorUtil.getMessage(context, KeycloakSmsConstants.MSG_MOBILE_REGEXP))) {
             logger.debug("Valid matching mobile numbers supplied, save credential ...");
             List<String> mobileNumber = new ArrayList<String>();
             mobileNumber.add(answer);
