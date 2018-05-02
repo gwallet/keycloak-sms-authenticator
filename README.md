@@ -29,7 +29,7 @@ Under Authentication > Required Actions:
 * Click on Register and select 'Mobile Number' to add the Required Action to the REALM.
 * Make sure that for the 'Mobile Number' both the 'Enabled' and 'Default Action' check boxes are checked.
 
-Malys contributions (for Lyra)
+Malys contributions (for [Lyra Network](https://www.lyra-network.com/))
 * Internationalization support
 * Vault, Java properties, environment variables parameters support
 * Lyrasms gateway support
