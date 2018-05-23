@@ -28,3 +28,13 @@ Under Authentication > Required Actions:
 * Make sure that for the 'SMS Authentication' both the 'Enabled' and 'Default Action' check boxes are checked.
 * Click on Register and select 'Mobile Number' to add the Required Action to the REALM.
 * Make sure that for the 'Mobile Number' both the 'Enabled' and 'Default Action' check boxes are checked.
+
+Malys contributions (for [Lyra Network](https://www.lyra-network.com/))
+* Internationalization support
+* Vault, Java properties, environment variables parameters support
+* Lyrasms gateway support
+* Add mobilephone number verification
+* Add input mobile phone number on authenticator
+* Refactoring
+* Template cleaning
+* Documentation

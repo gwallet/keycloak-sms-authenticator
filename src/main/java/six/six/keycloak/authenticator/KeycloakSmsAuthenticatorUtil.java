@@ -1,15 +1,26 @@
 package six.six.keycloak.authenticator;
 
-import com.amazonaws.services.sns.model.PublishResult;
+
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
+import com.google.i18n.phonenumbers.Phonenumber;
 import org.jboss.logging.Logger;
+import org.keycloak.authentication.AuthenticationFlowContext;
+import org.keycloak.authentication.RequiredActionContext;
 import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.UserModel;
-import six.six.aws.snsclient.SnsNotificationService;
+import org.keycloak.theme.Theme;
+import org.keycloak.theme.ThemeProvider;
+import six.six.gateway.Gateways;
+import six.six.gateway.SMSService;
+import six.six.gateway.aws.snsclient.SnsNotificationService;
+import six.six.gateway.lyrasms.LyraSMSService;
+import six.six.keycloak.EnvSubstitutor;
+import six.six.keycloak.KeycloakSmsConstants;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URL;
-import java.net.URLEncoder;
+import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -66,35 +77,121 @@ public class KeycloakSmsAuthenticatorUtil {
         return value;
     }
 
-    public static String createMessage(String code, String mobileNumber, AuthenticatorConfigModel config) {
-        String text = KeycloakSmsAuthenticatorUtil.getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_TEXT);
-        text = text.replaceAll("%sms-code%", code);
-        text = text.replaceAll("%phonenumber%", mobileNumber);
+    public static Boolean getConfigBoolean(AuthenticatorConfigModel config, String configName) {
+        return getConfigBoolean(config, configName, true);
+    }
 
+    public static Boolean getConfigBoolean(AuthenticatorConfigModel config, String configName, Boolean defaultValue) {
+
+        Boolean value = defaultValue;
+
+        if (config.getConfig() != null) {
+            // Get value
+            Object obj = config.getConfig().get(configName);
+            try {
+                value = Boolean.valueOf((String) obj); // s --> ms
+            } catch (NumberFormatException nfe) {
+                logger.error("Can not convert " + obj + " to a boolean.");
+            }
+        }
+
+        return value;
+    }
+
+    public static String createMessage(String text,String code, String mobileNumber) {
+        if(text !=null){
+            text = text.replaceAll("%sms-code%", code);
+            text = text.replaceAll("%phonenumber%", mobileNumber);
+        }
         return text;
     }
 
-    public static String setDefaultCountryCodeIfZero(String mobileNumber) {
-        if (mobileNumber.startsWith("07")) {
-            mobileNumber = "+44" + mobileNumber.substring(1);
+    public static String setDefaultCountryCodeIfZero(String mobileNumber,String prefix ,String condition) {
+
+        if (prefix!=null && condition!=null && mobileNumber.startsWith(condition)) {
+            mobileNumber = prefix + mobileNumber.substring(1);
+        }
+        return mobileNumber;
+    }
+
+    /**
+     * Check mobile number normative strcuture
+     * @param mobileNumber
+     * @return formatted mobile number
+     */
+    public static String checkMobileNumber(String mobileNumber) {
+
+        PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+        try {
+            Phonenumber.PhoneNumber phone = phoneUtil.parse(mobileNumber, null);
+            mobileNumber = phoneUtil.format(phone,
+                    PhoneNumberUtil.PhoneNumberFormat.E164);
+        } catch (NumberParseException e) {
+            logger.error("Invalid phone number " + mobileNumber, e);
         }
 
         return mobileNumber;
     }
 
-    static boolean sendSmsCode(String mobileNumber, String code, AuthenticatorConfigModel config) {
+
+    public static String getMessage(AuthenticationFlowContext context, String key){
+        String result=null;
+        try {
+            ThemeProvider themeProvider = context.getSession().getProvider(ThemeProvider.class, "extending");
+            Theme currentTheme = themeProvider.getTheme(context.getRealm().getLoginTheme(), Theme.Type.LOGIN);
+            Locale locale = context.getSession().getContext().resolveLocale(context.getUser());
+            result = currentTheme.getMessages(locale).getProperty(key);
+        }catch (IOException e){
+            logger.warn(key + "not found in messages");
+        }
+        return result;
+    }
+
+    public static String getMessage(RequiredActionContext context, String key){
+        String result=null;
+        try {
+            ThemeProvider themeProvider = context.getSession().getProvider(ThemeProvider.class, "extending");
+            Theme currentTheme = themeProvider.getTheme(context.getRealm().getLoginTheme(), Theme.Type.LOGIN);
+            Locale locale = context.getSession().getContext().resolveLocale(context.getUser());
+            result = currentTheme.getMessages(locale).getProperty(key);
+        }catch (IOException e){
+            logger.warn(key + "not found in messages");
+        }
+        return result;
+    }
+
+
+    static boolean sendSmsCode(String mobileNumber, String code, AuthenticationFlowContext context) {
+        final AuthenticatorConfigModel config = context.getAuthenticatorConfig();
+
         // Send an SMS
         KeycloakSmsAuthenticatorUtil.logger.debug("Sending " + code + "  to mobileNumber " + mobileNumber);
 
-        String smsUsr = getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTTOKEN);
-        String smsPwd = getConfigString(config, KeycloakSmsAuthenticatorConstants.CONF_PRP_SMS_CLIENTSECRET);
+        String smsUsr = EnvSubstitutor.envSubstitutor.replace(getConfigString(config, KeycloakSmsConstants.CONF_PRP_SMS_CLIENTTOKEN));
+        String smsPwd = EnvSubstitutor.envSubstitutor.replace(getConfigString(config, KeycloakSmsConstants.CONF_PRP_SMS_CLIENTSECRET));
+        String gateway = getConfigString(config, KeycloakSmsConstants.CONF_PRP_SMS_GATEWAY);
+        String endpoint = EnvSubstitutor.envSubstitutor.replace(getConfigString(config, KeycloakSmsConstants.CONF_PRP_SMS_GATEWAY_ENDPOINT));
+        boolean isProxy = getConfigBoolean(config, KeycloakSmsConstants.PROXY_ENABLED);
 
-        String smsText = createMessage(code, mobileNumber, config);
+        String template =getMessage(context, KeycloakSmsConstants.CONF_PRP_SMS_TEXT);
+
+        String smsText = createMessage(template,code, mobileNumber);
+        boolean result;
+        SMSService smsService;
         try {
-            PublishResult send_result = new SnsNotificationService().send(setDefaultCountryCodeIfZero(mobileNumber), smsText, smsUsr, smsPwd);
-            return true;
+            Gateways g=Gateways.valueOf(gateway);
+            switch(g) {
+                case LYRA_SMS:
+                    smsService=new LyraSMSService(endpoint,isProxy);
+                    break;
+                default:
+                    smsService=new SnsNotificationService();
+            }
+
+            result=smsService.send(checkMobileNumber(setDefaultCountryCodeIfZero(mobileNumber, getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_DEFAULT), getMessage(context, KeycloakSmsConstants.MSG_MOBILE_PREFIX_CONDITION))), smsText, smsUsr, smsPwd);
+          return result;
        } catch(Exception e) {
-            //Just like pokemon
+            logger.error("Fail to send SMS " ,e );
             return false;
         }
     }
@@ -110,7 +207,12 @@ public class KeycloakSmsAuthenticatorUtil {
         return Long.toString(code);
     }
 
-    public static boolean validateTelephoneNumber(String telephoneNumber) {
-        return telephoneNumber.matches("^(?:(?:\\(?(?:0(?:0|11)\\)?[\\s-]?\\(?|\\+)44\\)?[\\s-]?(?:\\(?0\\)?[\\s-]?)?)|(?:\\(?0))(?:(?:\\d{5}\\)?[\\s-]?\\d{4,5})|(?:\\d{4}\\)?[\\s-]?(?:\\d{5}|\\d{3}[\\s-]?\\d{3}))|(?:\\d{3}\\)?[\\s-]?\\d{3}[\\s-]?\\d{3,4})|(?:\\d{2}\\)?[\\s-]?\\d{4}[\\s-]?\\d{4}))(?:[\\s-]?(?:x|ext\\.?|\\#)\\d{3,4})?$");
+    public static boolean validateTelephoneNumber(String telephoneNumber, String regexp ) {
+        boolean result=true;
+        if(regexp!=null){
+            result =telephoneNumber.matches(regexp);
+        }
+
+        return result;
     }
 }
