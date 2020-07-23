@@ -107,4 +107,29 @@ public class KeycloakSmsMobilenumberCredentialProvider implements CredentialProv
         List<CredentialModel> creds = session.userCredentialManager().getStoredCredentialsByType(realm, user, MOBILE_NUMBER);
         if (!creds.isEmpty()) user.getCachedWith().put(CACHE_KEY, creds.get(0));
     }
+
+    @Override
+    public String getType() {
+        return null;
+    }
+
+    @Override
+    public CredentialModel createCredential(RealmModel realmModel, UserModel userModel, CredentialModel credentialModel) {
+        return null;
+    }
+
+    @Override
+    public boolean deleteCredential(RealmModel realmModel, UserModel userModel, String s) {
+        return false;
+    }
+
+    @Override
+    public CredentialModel getCredentialFromModel(CredentialModel credentialModel) {
+        return null;
+    }
+
+    @Override
+    public CredentialTypeMetadata getCredentialTypeMetadata(CredentialTypeMetadataContext credentialTypeMetadataContext) {
+        return null;
+    }
 }

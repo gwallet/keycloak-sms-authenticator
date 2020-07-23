@@ -1,19 +1,30 @@
 package six.six.gateway.aws.snsclient;
+
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Region;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 
 /**
  * Created by nickpack on 09/08/2017.
  */
 public class SnsClientFactory {
-    private static AmazonSNSClient snsClient = null;
+    private static AmazonSNS snsClient = null;
 
-    public static AmazonSNSClient getSnsClient(String clientToken, String clientSecret) {
+    public static AmazonSNS getSnsClient(String clientToken, String clientSecret) {
         if (null == snsClient) {
-            BasicAWSCredentials CREDENTIALS = new BasicAWSCredentials(clientToken, clientSecret);
-            snsClient = new AmazonSNSClient(CREDENTIALS).withRegion(Region.getRegion(Regions.EU_WEST_1));
+
+            AWSCredentialsProvider provider = new AWSCredentialsProvider() {
+                @Override
+                public AWSCredentials getCredentials() {
+                    return new BasicAWSCredentials(clientToken, clientSecret);
+                }
+                @Override
+                public void refresh() {
+                }
+            };
+            snsClient = AmazonSNSClientBuilder.standard().withRegion("eu-west-1").withCredentials(provider).build();
         }
         return snsClient;
     }

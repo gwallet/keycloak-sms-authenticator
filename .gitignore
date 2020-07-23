@@ -1,3 +1,7 @@
 target/*
 
 node_modules/
+
+.idea/
+
+dependency-reduced-pom.xml
