@@ -18,7 +18,7 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
-            <version>2.2.1.Final</version>
+            <version>20.0.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
